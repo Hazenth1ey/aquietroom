@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>a quiet room</title>
+    <link>https://hazenth1ey.github.io/aquietroom/</link>
+    <description>a portal to my innerworld — quiet writing, work, and wanderings.</description>
+    <language>en</language>
+    <atom:link href="https://hazenth1ey.github.io/aquietroom/feed.xml" rel="self" type="application/rss+xml" />
+
+    <item>
+      <title>On keeping a quiet room</title>
+      <link>https://hazenth1ey.github.io/aquietroom/writing/posts/on-keeping-a-quiet-room.html</link>
+      <guid>https://hazenth1ey.github.io/aquietroom/writing/posts/on-keeping-a-quiet-room.html</guid>
+      <pubDate>Thu, 23 Jul 2026 08:00:00 GMT</pubDate>
+      <description>Why I built a small, still corner of the internet — and what I hope to do with it.</description>
+    </item>
+
+    <item>
+      <title>A field of small quiet things</title>
+      <link>https://hazenth1ey.github.io/aquietroom/writing/posts/a-field-of-small-quiet-things.html</link>
+      <guid>https://hazenth1ey.github.io/aquietroom/writing/posts/a-field-of-small-quiet-things.html</guid>
+      <pubDate>Fri, 10 Jul 2026 08:00:00 GMT</pubDate>
+      <description>On paying attention to the ordinary — and letting it be enough.</description>
+    </item>
+  </channel>
+</rss>
