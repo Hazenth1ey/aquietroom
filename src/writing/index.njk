@@ -1,0 +1,28 @@
+---
+layout: base
+nav: writing
+seoTitle: "writing — a quiet room"
+ogTitle: "writing — a quiet room"
+description: "Notes, thoughts, and journal entries from a quiet room."
+---
+<main class="wrap">
+  <p class="eyebrow" data-reveal="0">writing</p>
+  <h1 class="title" data-reveal="1" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">from the quiet</h1>
+  <p class="lede" data-reveal="2" style="margin-top: 1.5rem;">
+    Thoughts set down before they drift away.
+  </p>
+
+  <ul class="entries">
+    {% for post in collections.posts | reverse %}
+    <li class="entry" data-reveal="{{ loop.index0 + 3 }}">
+      <a href="{{ post.url }}">
+        <time datetime="{{ post.date | htmlDate }}">{{ post.date | readableDate }}</time>
+        <h3>{{ post.data.title }}</h3>
+        <p>{{ post.data.description }}</p>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <a href="/" class="back">back to the door</a>
+</main>

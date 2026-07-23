@@ -1,0 +1,13 @@
+{
+  "name": "aquietroom",
+  "version": "1.0.0",
+  "private": true,
+  "description": "a quiet room — a portal to my innerworld",
+  "scripts": {
+    "build": "eleventy",
+    "serve": "eleventy --serve"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.0.0"
+  }
+}
