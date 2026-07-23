@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>projects — a quiet room</title>
+  <meta name="description" content="Things I've made and things I'm slowly tending to." />
+  <meta name="theme-color" content="#08080c" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="projects — a quiet room" />
+  <meta property="og:description" content="Things I've made and things I'm slowly tending to." />
+  <meta property="og:image" content="og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <canvas id="ambient"></canvas>
+
+  <header class="site-head">
+    <a href="index.html" class="mark">a quiet room</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="writing/">writing</a>
+      <a href="projects.html" aria-current="page">projects</a>
+      <a href="about.html">about</a>
+    </nav>
+  </header>
+
+  <main class="wrap wrap--wide">
+    <p class="eyebrow" data-reveal="0">projects</p>
+    <h1 class="title" data-reveal="1" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">things I'm tending to</h1>
+    <p class="lede" data-reveal="2" style="margin-top: 1.5rem; max-width: 40rem;">
+      A handful of things I've built, broken, and come back to.
+    </p>
+
+    <ul class="works">
+      <li class="work" data-reveal="3">
+        <h3>a quiet room <span class="year">2026</span></h3>
+        <p>
+          This very place — a hand-built portal for writing and wandering.
+          No framework, no noise, just plain HTML and a little drifting dust.
+        </p>
+        <div class="tags">
+          <span class="tag">html</span>
+          <span class="tag">css</span>
+          <span class="tag">canvas</span>
+        </div>
+      </li>
+
+      <li class="work" data-reveal="4">
+        <h3>untitled, in progress <span class="year">—</span></h3>
+        <p>
+          Something I'm still shaping in the dark. It'll surface here when
+          it's ready to be seen.
+        </p>
+        <div class="tags">
+          <span class="tag">soon</span>
+        </div>
+      </li>
+
+      <li class="work" data-reveal="5">
+        <h3>a small experiment <span class="year">—</span></h3>
+        <p>
+          Replace me with something real — a tool, a sketch, a thing you
+          love. Each card links out when it's ready.
+        </p>
+        <div class="tags">
+          <span class="tag">placeholder</span>
+        </div>
+      </li>
+    </ul>
+
+    <a href="index.html" class="back">back to the door</a>
+  </main>
+
+  <footer class="site-foot">
+    <span>a quiet room</span>
+    <a href="index.html">a portal to my innerworld</a>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
