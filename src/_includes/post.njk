@@ -5,10 +5,12 @@ ogType: article
 ---
 <main class="wrap">
   <article class="prose">
+    {% if cover %}<img class="post-cover" src="{{ cover }}" alt="" data-reveal="0" />{% endif %}
     <header class="post-head" data-reveal="0">
       <time datetime="{{ page.date | htmlDate }}">{{ page.date | readableDate }}</time>
       <div class="post-meta">
         <span>{{ content | readingTime }}</span>
+        {% if tags and tags.length %}<span class="dot">·</span><span>{{ tags | join(", ") }}</span>{% endif %}
       </div>
       <h1>{{ title }}</h1>
     </header>

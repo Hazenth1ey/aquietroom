@@ -1,5 +1,4 @@
 {
   "layout": "post",
-  "tags": "posts",
   "permalink": "/writing/{{ page.fileSlug }}/"
 }

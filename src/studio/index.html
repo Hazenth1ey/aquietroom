@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Studio — a quiet room</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <!-- Rich Markdown editor -->
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.min.css" />
+  <link rel="stylesheet" href="/studio/studio.css?v=1" />
+</head>
+<body>
+  <!-- ===================== LOGIN ===================== -->
+  <section id="login" class="login">
+    <div class="login-card">
+      <p class="eyebrow">the studio</p>
+      <h1>a quiet room</h1>
+      <p class="login-sub">Sign in to write.</p>
+      <button id="login-btn" class="btn btn-primary">Sign in with GitHub</button>
+      <p id="login-error" class="login-error" hidden></p>
+    </div>
+  </section>
+
+  <!-- ===================== APP ===================== -->
+  <div id="app" class="app" hidden>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">✦</span>
+        <span class="brand-name">a quiet room<small>STUDIO</small></span>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item is-active" data-view="write">
+          <span class="nav-ico">✎</span> Write
+        </button>
+        <button class="nav-item" data-view="list">
+          <span class="nav-ico">▤</span> My content
+        </button>
+      </nav>
+
+      <a class="nav-back" href="/">← Back to the room</a>
+
+      <div class="user">
+        <img id="user-avatar" class="user-avatar" alt="" />
+        <div class="user-meta">
+          <strong id="user-name">…</strong>
+          <span>Author</span>
+        </div>
+        <button id="logout" class="user-logout" title="Sign out">⇥</button>
+      </div>
+    </aside>
+
+    <main class="stage">
+      <header class="topbar">
+        <div class="crumb">STUDIO <span>/</span> <em id="crumb">Write</em></div>
+        <div class="topbar-actions">
+          <span id="save-status" class="save-status"></span>
+          <button id="new-btn" class="btn btn-ghost">＋ New entry</button>
+        </div>
+      </header>
+
+      <!-- ---------- WRITE ---------- -->
+      <section id="view-write" class="view view-write">
+        <div class="editor-col">
+          <div class="card">
+            <input id="f-title" class="input-title" placeholder="Title" />
+            <input id="f-excerpt" class="input-sub" placeholder="Excerpt — a one-line summary" />
+            <input id="f-lede" class="input-sub" placeholder="Lede — the opening line (optional)" />
+            <div id="editor"></div>
+          </div>
+        </div>
+
+        <aside class="organize">
+          <div class="card">
+            <h3 class="panel-title">Organize</h3>
+
+            <label class="field">
+              <span>Date</span>
+              <input type="date" id="f-date" />
+            </label>
+
+            <label class="field">
+              <span>Tags</span>
+              <input id="f-tags" placeholder="comma, separated" />
+            </label>
+
+            <div class="field">
+              <span>Cover image</span>
+              <div class="cover">
+                <img id="cover-preview" class="cover-preview" hidden alt="" />
+                <div class="cover-actions">
+                  <button id="cover-btn" class="btn btn-soft">Choose image</button>
+                  <button id="cover-clear" class="btn btn-link" hidden>Remove</button>
+                </div>
+                <input type="file" id="cover-file" accept="image/*" hidden />
+              </div>
+            </div>
+          </div>
+
+          <div class="card publish-card">
+            <button id="publish-btn" class="btn btn-primary btn-block">Publish</button>
+            <button id="draft-btn" class="btn btn-soft btn-block">Save draft</button>
+            <button id="delete-btn" class="btn btn-danger btn-block" hidden>Delete entry</button>
+          </div>
+        </aside>
+      </section>
+
+      <!-- ---------- LIST ---------- -->
+      <section id="view-list" class="view view-list" hidden>
+        <div class="card">
+          <div class="list-head">
+            <h3 class="panel-title">My content</h3>
+            <button class="btn btn-ghost" data-view="write" id="list-new">＋ New entry</button>
+          </div>
+          <div id="post-list" class="post-list"><p class="muted">Loading…</p></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="https://uicdn.toast.com/editor/latest/toastui-editor.min.js"></script>
+  <script src="/studio/app.js?v=1"></script>
+</body>
+</html>
