@@ -20,7 +20,16 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/CNAME": "CNAME" });
   eleventyConfig.addPassthroughCopy({ "src/robots.txt": "robots.txt" });
   eleventyConfig.addPassthroughCopy({ "src/admin": "admin" });
+  eleventyConfig.addPassthroughCopy({ "src/studio": "studio" });
   eleventyConfig.addPassthroughCopy({ "src/uploads": "uploads" });
+
+  // --- Posts collection: exclude drafts, oldest→newest (for prev/next) ---
+  eleventyConfig.addCollection("posts", (api) =>
+    api
+      .getFilteredByGlob("src/writing/posts/*.md")
+      .filter((p) => !p.data.draft)
+      .sort((a, b) => a.date - b.date)
+  );
 
   // --- Date filters (UTC, so a YYYY-MM-DD front-matter date never drifts) ---
   eleventyConfig.addFilter("readableDate", (d) => {
