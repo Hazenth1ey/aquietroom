@@ -39,8 +39,10 @@ to GitHub Pages on every push to `main`. To turn it on:
 1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 2. Merge to `main` (or run the workflow manually via **Actions → Deploy → Run workflow**).
 
-If you use a custom domain, update the absolute-URL bits (the `og:image` paths
-are relative and will resolve automatically).
+The site is served at the custom domain **vermilionhereafter.com** (set via the
+`CNAME` file). The absolute URLs in `feed.xml`, `sitemap.xml`, and `robots.txt`
+point there; `og:image` and other asset paths are relative and resolve
+automatically.
 
 ## Other files
 
