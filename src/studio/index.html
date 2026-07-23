@@ -12,7 +12,7 @@
   <!-- Rich Markdown editor -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.min.css" />
-  <link rel="stylesheet" href="/studio/studio.css?v=2" />
+  <link rel="stylesheet" href="/studio/studio.css?v=3" />
 </head>
 <body>
   <!-- ===================== LOGIN ===================== -->
@@ -40,6 +40,9 @@
         </button>
         <button class="nav-item" data-view="list">
           <span class="nav-ico">▤</span> My content
+        </button>
+        <button class="nav-item" data-view="sound">
+          <span class="nav-ico">♪</span> Soundtrack
         </button>
       </nav>
 
@@ -120,6 +123,23 @@
           <div id="post-list" class="post-list"><p class="muted">Loading…</p></div>
         </div>
       </section>
+
+      <!-- ---------- SOUNDTRACK ---------- -->
+      <section id="view-sound" class="view view-sound" hidden>
+        <div class="card">
+          <div class="list-head">
+            <h3 class="panel-title">Soundtrack</h3>
+            <button class="btn btn-ghost" id="track-add">＋ Add track</button>
+            <input type="file" id="track-file" accept="audio/*" hidden />
+          </div>
+          <p class="muted" style="margin: -0.5rem 0 1.25rem;">
+            These play in the ambient player (the ◍ toggle on the site). Add
+            more than one and they play in sequence, then loop.
+          </p>
+          <div id="track-list" class="track-list"><p class="muted">Loading…</p></div>
+          <button class="btn btn-primary" id="track-save" style="margin-top: 1.5rem;">Save soundtrack</button>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -127,6 +147,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor.min.js"></script>
-  <script src="/studio/app.js?v=2"></script>
+  <script src="/studio/app.js?v=3"></script>
 </body>
 </html>

@@ -84,3 +84,21 @@ collections:
               - { label: "Description", name: "description", widget: "text" }
               - { label: "Tags", name: "tags", widget: "list", required: false, hint: "e.g. html, css" }
               - { label: "Link (optional)", name: "url", widget: "string", required: false }
+
+  - name: soundtrack
+    label: "Soundtrack"
+    description: "The ambient music that plays behind the site."
+    files:
+      - name: tracks
+        label: "Ambient soundtrack"
+        file: "src/_data/soundtrack.json"
+        fields:
+          - label: "Tracks"
+            name: "tracks"
+            widget: "list"
+            label_singular: "Track"
+            summary: "{{fields.title}}"
+            hint: "Played in order, then looped. Add or remove freely."
+            fields:
+              - { label: "Title", name: "title", widget: "string" }
+              - { label: "Audio file", name: "src", widget: "file", media_library: { config: { max_file_size: 20000000 } } }

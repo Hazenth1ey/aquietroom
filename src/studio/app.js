@@ -12,11 +12,15 @@
     branch: "main",
     postsDir: "src/journal/posts",
     uploadsDir: "src/uploads",
+    soundtrackPath: "src/_data/soundtrack.json",
     authBase: "https://aquietroom-auth.ivankolly.workers.dev",
   };
   const TOKEN_KEY = "qr_studio_token";
 
-  const state = { token: null, file: null, sha: null, cover: "", editor: null };
+  const state = {
+    token: null, file: null, sha: null, cover: "", editor: null,
+    sound: { sha: null, tracks: [] },
+  };
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -221,8 +225,107 @@
     );
     $("#view-write").hidden = name !== "write";
     $("#view-list").hidden = name !== "list";
-    $("#crumb").textContent = name === "list" ? "My content" : "Write";
+    $("#view-sound").hidden = name !== "sound";
+    $("#crumb").textContent =
+      name === "list" ? "My content" : name === "sound" ? "Soundtrack" : "Write";
     if (name === "list") renderList();
+    if (name === "sound") loadSoundtrack();
+  }
+
+  /* ---------------- soundtrack ---------------- */
+  async function loadSoundtrack() {
+    const box = $("#track-list");
+    box.innerHTML = '<p class="muted">Loading…</p>';
+    try {
+      const sha = await shaOf(CONFIG.soundtrackPath);
+      if (sha) {
+        const { raw } = await getFile(CONFIG.soundtrackPath);
+        const data = JSON.parse(raw || "{}");
+        state.sound.sha = sha;
+        state.sound.tracks = Array.isArray(data.tracks) ? data.tracks : [];
+      } else {
+        state.sound.sha = null;
+        state.sound.tracks = [];
+      }
+      renderTracks();
+    } catch (e) {
+      box.innerHTML = `<p class="muted">${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  function renderTracks() {
+    const box = $("#track-list");
+    if (!state.sound.tracks.length) {
+      box.innerHTML = '<p class="muted">No tracks yet. Add one to give the room a sound.</p>';
+      return;
+    }
+    box.innerHTML = "";
+    state.sound.tracks.forEach((t, i) => {
+      const row = document.createElement("div");
+      row.className = "track-row";
+      row.innerHTML =
+        `<span class="track-ord">${i + 1}</span>` +
+        `<input class="track-title" value="${escapeHtml(t.title || "")}" placeholder="Track title" />` +
+        `<span class="track-src" title="${escapeHtml(t.src || "")}">${escapeHtml((t.src || "").split("/").pop())}</span>` +
+        `<button class="pr-del" title="Remove">✕</button>`;
+      row.querySelector(".track-title").addEventListener("input", (e) => {
+        state.sound.tracks[i].title = e.target.value;
+      });
+      row.querySelector(".pr-del").addEventListener("click", () => {
+        state.sound.tracks.splice(i, 1);
+        renderTracks();
+      });
+      box.appendChild(row);
+    });
+  }
+
+  async function addTrack(file) {
+    try {
+      setStatus("Uploading track…");
+      const ext = (file.name.split(".").pop() || "mp3").toLowerCase();
+      const base = slugify(file.name.replace(/\.[^.]+$/, ""));
+      const name = `${Date.now()}-${base}.${ext}`;
+      const path = `${CONFIG.uploadsDir}/${name}`;
+      const b64 = await fileToB64(file);
+      const res = await gh(`/repos/${CONFIG.repo}/contents/${path}`, {
+        method: "PUT",
+        body: JSON.stringify({ message: `Upload track ${name}`, content: b64, branch: CONFIG.branch }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Upload failed.");
+      }
+      const title = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+      state.sound.tracks.push({ title: title || name, src: `/uploads/${name}` });
+      renderTracks();
+      setStatus("Track added — remember to Save", "ok");
+      toast("Track uploaded. Click Save soundtrack to publish.");
+    } catch (e) {
+      setStatus("");
+      toast(e.message, true);
+    }
+  }
+
+  async function saveSoundtrack() {
+    try {
+      setStatus("Saving…");
+      $("#track-save").disabled = true;
+      const content = JSON.stringify({ tracks: state.sound.tracks }, null, 2) + "\n";
+      const res = await putFile(
+        CONFIG.soundtrackPath,
+        content,
+        "Update soundtrack",
+        state.sound.sha
+      );
+      state.sound.sha = res.content && res.content.sha;
+      setStatus("Saved", "ok");
+      toast("Soundtrack saved — live in about a minute.");
+    } catch (e) {
+      setStatus("Save failed", "err");
+      toast(e.message, true);
+    } finally {
+      $("#track-save").disabled = false;
+    }
   }
 
   /* ---------------- write ---------------- */
@@ -495,6 +598,12 @@
       e.target.value = "";
     });
     $("#cover-clear").addEventListener("click", () => { state.cover = ""; setCoverPreview(""); });
+    $("#track-add").addEventListener("click", () => $("#track-file").click());
+    $("#track-file").addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) addTrack(e.target.files[0]);
+      e.target.value = "";
+    });
+    $("#track-save").addEventListener("click", saveSoundtrack);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
