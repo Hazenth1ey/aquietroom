@@ -9,44 +9,22 @@ description: "Things I've made and things I'm slowly tending to."
   <p class="eyebrow" data-reveal="0">projects</p>
   <h1 class="title" data-reveal="1" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">things I'm tending to</h1>
   <p class="lede" data-reveal="2" style="margin-top: 1.5rem; max-width: 40rem;">
-    A handful of things I've built, broken, and come back to.
+    {{ projects.intro }}
   </p>
 
   <ul class="works">
-    <li class="work" data-reveal="3">
-      <h3>a quiet room <span class="year">2026</span></h3>
-      <p>
-        This very place — a hand-built portal for writing and wandering.
-        No framework, no noise, just plain HTML and a little drifting dust.
-      </p>
+    {% for p in projects.items %}
+    <li class="work" data-reveal="{{ loop.index0 + 3 }}">
+      <h3>{{ p.title }}{% if p.year %} <span class="year">{{ p.year }}</span>{% endif %}</h3>
+      <p>{{ p.description }}</p>
+      {% if p.tags and p.tags.length %}
       <div class="tags">
-        <span class="tag">html</span>
-        <span class="tag">css</span>
-        <span class="tag">canvas</span>
+        {% for t in p.tags %}<span class="tag">{{ t }}</span>{% endfor %}
       </div>
+      {% endif %}
+      {% if p.url %}<p style="margin-top: 1rem;"><a class="work-link" href="{{ p.url }}">visit →</a></p>{% endif %}
     </li>
-
-    <li class="work" data-reveal="4">
-      <h3>untitled, in progress <span class="year">—</span></h3>
-      <p>
-        Something I'm still shaping in the dark. It'll surface here when
-        it's ready to be seen.
-      </p>
-      <div class="tags">
-        <span class="tag">soon</span>
-      </div>
-    </li>
-
-    <li class="work" data-reveal="5">
-      <h3>a small experiment <span class="year">—</span></h3>
-      <p>
-        Replace me with something real — a tool, a sketch, a thing you
-        love. Each card links out when it's ready.
-      </p>
-      <div class="tags">
-        <span class="tag">placeholder</span>
-      </div>
-    </li>
+    {% endfor %}
   </ul>
 
   <a href="/" class="back">back to the door</a>

@@ -1,9 +1,17 @@
+const markdownIt = require("markdown-it");
+
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
+const mdLib = markdownIt({ html: true, linkify: true, typographer: false });
+
 module.exports = function (eleventyConfig) {
+  // Render Markdown coming from data files (e.g. the CMS-edited About body).
+  eleventyConfig.addFilter("md", (s) => (s ? mdLib.render(String(s)) : ""));
+  eleventyConfig.addFilter("mdInline", (s) => (s ? mdLib.renderInline(String(s)) : ""));
+
   // --- Passthrough static assets (copied verbatim to the site root) ---
   eleventyConfig.addPassthroughCopy({ "src/css": "css" });
   eleventyConfig.addPassthroughCopy({ "src/js": "js" });
