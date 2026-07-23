@@ -155,78 +155,70 @@
     })();
   }
 
-  /* ---- Optional ambient soundscape (synthesized, off by default) ---- */
+  /* ---- Optional ambient soundscape (a looping track, off by default) ---- */
   function soundscape() {
     const btn = document.getElementById("sound-toggle");
     if (!btn) return;
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) { btn.remove(); return; }
 
-    let ctx, master, lfo, started = false, playing = false;
+    const TRACK = "/audio/ambient.mp3";
+    const LEVEL = 0.55; // ceiling volume
+
+    let ctx, gain, audio, started = false, playing = false, fadeTimer = null;
 
     function build() {
-      ctx = new AC();
-      master = ctx.createGain();
-      master.gain.value = 0.0001;
-      master.connect(ctx.destination);
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 640;
-      filter.Q.value = 0.5;
-      filter.connect(master);
-
-      // a soft, low drone chord (A2 · E3 · A3 · C#4)
-      const voices = [
-        { f: 110.0, g: 0.5, t: "triangle" },
-        { f: 164.81, g: 0.3, t: "sine" },
-        { f: 220.0, g: 0.34, t: "triangle" },
-        { f: 277.18, g: 0.16, t: "sine" },
-      ];
-      voices.forEach((v, i) => {
-        const o = ctx.createOscillator();
-        o.type = v.t;
-        o.frequency.value = v.f;
-        o.detune.value = (i - 1.5) * 4;
-        const g = ctx.createGain();
-        g.gain.value = v.g;
-        o.connect(g);
-        g.connect(filter);
-        o.start();
-      });
-
-      // slow "breathing" on the master level
-      lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.07;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 0.022;
-      lfo.connect(lfoGain);
-      lfoGain.connect(master.gain);
-      lfo.start();
-
+      audio = new Audio(TRACK);
+      audio.loop = true;
+      audio.preload = "auto";
+      // Web Audio gives us reliable cross-browser fades (element.volume is
+      // read-only on iOS). Same-origin file, so no CORS tainting.
+      if (AC) {
+        ctx = new AC();
+        const srcNode = ctx.createMediaElementSource(audio);
+        gain = ctx.createGain();
+        gain.gain.value = 0.0001;
+        srcNode.connect(gain);
+        gain.connect(ctx.destination);
+      } else {
+        audio.volume = 0;
+      }
       started = true;
     }
 
     function ramp(to, dur) {
-      const now = ctx.currentTime;
-      master.gain.cancelScheduledValues(now);
-      master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), now);
-      master.gain.linearRampToValueAtTime(to, now + dur);
+      if (gain) {
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
+        gain.gain.linearRampToValueAtTime(Math.max(to, 0.0001), now + dur);
+        return;
+      }
+      // Fallback: fade element volume with an interval.
+      clearInterval(fadeTimer);
+      const from = audio.volume, t0 = Date.now();
+      fadeTimer = setInterval(() => {
+        const k = Math.min(1, (Date.now() - t0) / (dur * 1000));
+        audio.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+        if (k >= 1) clearInterval(fadeTimer);
+      }, 40);
     }
 
     function play() {
       if (!started) build();
-      if (ctx.state === "suspended") ctx.resume();
-      ramp(0.08, 3.5);
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const p = audio.play();
+      if (p && p.catch) p.catch(() => {});
+      ramp(LEVEL, 3);
       playing = true;
       btn.setAttribute("aria-pressed", "true");
       try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
     }
     function stop() {
-      if (started) ramp(0.0001, 1.4);
+      ramp(0.0001, 1.3);
       playing = false;
       btn.setAttribute("aria-pressed", "false");
       try { localStorage.setItem("qr_sound", "off"); } catch (e) {}
+      setTimeout(() => { if (!playing && audio) try { audio.pause(); } catch (e) {} }, 1500);
     }
 
     btn.addEventListener("click", () => (playing ? stop() : play()));
