@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ seoTitle or (title + " — a quiet room") }}</title>
+  <meta name="description" content="{{ description }}" />
+  <meta name="theme-color" content="#08080c" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta property="og:type" content="{{ ogType or 'website' }}" />
+  <meta property="og:title" content="{{ ogTitle or seoTitle or title }}" />
+  <meta property="og:description" content="{{ ogDescription or description }}" />
+  <meta property="og:image" content="/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="alternate" type="application/rss+xml" title="a quiet room" href="/feed.xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <canvas id="ambient"></canvas>
+
+  {% if header != false %}
+  <header class="site-head">
+    <a href="/" class="mark">a quiet room</a>
+    <nav class="nav" aria-label="Primary">
+      <a href="/writing/"{% if nav == "writing" %} aria-current="page"{% endif %}>writing</a>
+      <a href="/projects/"{% if nav == "projects" %} aria-current="page"{% endif %}>projects</a>
+      <a href="/about/"{% if nav == "about" %} aria-current="page"{% endif %}>about</a>
+    </nav>
+  </header>
+  {% endif %}
+
+  {{ content | safe }}
+
+  {% if footer != false %}
+  <footer class="site-foot">
+    <span>a quiet room</span>
+    <a href="/">a portal to my innerworld</a>
+  </footer>
+  {% endif %}
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

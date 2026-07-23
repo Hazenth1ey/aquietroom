@@ -1,0 +1,42 @@
+---
+layout: base
+nav: writing
+ogType: article
+---
+<main class="wrap">
+  <article class="prose">
+    <header class="post-head" data-reveal="0">
+      <time datetime="{{ page.date | htmlDate }}">{{ page.date | readableDate }}</time>
+      <div class="post-meta">
+        <span>{{ content | readingTime }}</span>
+      </div>
+      <h1>{{ title }}</h1>
+    </header>
+
+    <div data-reveal="1">
+      {% if lede %}<p class="lede" style="margin-bottom: 2rem;">{{ lede }}</p>{% endif %}
+      {{ content | safe }}
+    </div>
+
+    {% set newer = collections.posts | getNextCollectionItem %}
+    {% set older = collections.posts | getPreviousCollectionItem %}
+    {% if newer or older %}
+    <nav class="post-nav" aria-label="More writing" data-reveal="2">
+      {% if newer %}
+      <a class="prev" href="{{ newer.url }}">
+        <span>← newer</span>
+        <strong>{{ newer.data.title }}</strong>
+      </a>
+      {% endif %}
+      {% if older %}
+      <a class="next" href="{{ older.url }}">
+        <span>older →</span>
+        <strong>{{ older.data.title }}</strong>
+      </a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+    <a href="/writing/" class="back">back to writing</a>
+  </article>
+</main>

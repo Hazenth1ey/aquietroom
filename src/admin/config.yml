@@ -1,0 +1,37 @@
+# Decap CMS configuration — the back office for "a quiet room".
+#
+# Auth: Decap needs a tiny GitHub OAuth proxy. Deploy the Cloudflare Worker
+# described in DECAP-SETUP.md, then replace the base_url below with its URL
+# (e.g. https://quietroom-auth.<your-subdomain>.workers.dev).
+backend:
+  name: github
+  repo: Hazenth1ey/aquietroom
+  branch: main
+  base_url: https://REPLACE-WITH-YOUR-OAUTH-WORKER.workers.dev
+  auth_endpoint: auth
+
+site_url: https://vermilionhereafter.com
+display_url: https://vermilionhereafter.com
+logo_url: https://vermilionhereafter.com/favicon.svg
+
+media_folder: "src/uploads"
+public_folder: "/uploads"
+
+collections:
+  - name: journal
+    label: "Journal / Writing"
+    label_singular: "Entry"
+    description: "Your writing. Create an entry, write, and publish."
+    folder: "src/writing/posts"
+    create: true
+    slug: "{{slug}}"
+    extension: md
+    format: frontmatter
+    summary: "{{title}}  ·  {{date | date('YYYY-MM-DD')}}"
+    sortable_fields: [date, title]
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Date", name: "date", widget: "datetime", format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, picker_utc: true }
+      - { label: "Summary (shown in the list & RSS)", name: "description", widget: "string" }
+      - { label: "Lede (opening line, optional)", name: "lede", widget: "string", required: false }
+      - { label: "Body", name: "body", widget: "markdown" }

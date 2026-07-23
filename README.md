@@ -1,51 +1,62 @@
 # a quiet room
 
 A portal to my innerworld — a small, still, dark-and-atmospheric personal site.
-Hand-built with plain HTML, CSS, and a little JavaScript. No framework, no build step.
+Built with [Eleventy](https://www.11ty.dev/), a dark ambient design, and a
+[Decap CMS](https://decapcms.org/) back office for writing without touching code.
+
+## Writing a post
+
+**The easy way (the back office):** go to
+[/admin/](https://vermilionhereafter.com/admin/), log in with GitHub, write,
+and publish. See [`DECAP-SETUP.md`](./DECAP-SETUP.md) for the one-time auth setup.
+
+**By hand:** add a Markdown file to `src/writing/posts/` with front matter:
+
+```markdown
+---
+title: The title of the entry
+date: 2026-07-23
+description: One-line summary (used in the list and RSS).
+lede: An optional italic opening line.
+---
+Your writing, in Markdown.
+```
 
 ## Structure
 
 ```
-index.html              → the portal / landing page
-about.html              → about / bio
-projects.html           → projects & work
-writing/index.html      → writing index (list of entries)
-writing/posts/*.html    → individual posts
-css/style.css           → shared stylesheet (the whole look lives here)
-js/main.js              → ambient drifting-dust canvas + gentle reveals
+src/
+  index.njk              → the portal / landing page
+  about.njk              → about / bio
+  projects.njk           → projects & work
+  404.njk                → the "lost" page
+  writing/
+    index.njk            → writing index (auto-lists posts)
+    posts/*.md           → individual entries (Markdown + front matter)
+  _includes/
+    base.njk             → shared page shell (head, nav, footer)
+    post.njk             → per-post layout (date, reading time, prev/next)
+  feed.njk               → generates /feed.xml from posts
+  sitemap.njk            → generates /sitemap.xml
+  admin/                 → Decap CMS (the back office)
+  css/style.css          → the whole look
+  js/main.js             → ambient drifting-dust canvas + gentle reveals
+  favicon.svg, og-image.png, CNAME, robots.txt, uploads/
+eleventy.config.js       → build config (passthrough, date/reading-time filters)
+oauth-worker.js          → Cloudflare Worker for the CMS GitHub login
 ```
-
-## Adding a new post
-
-1. Copy `writing/posts/on-keeping-a-quiet-room.html` to a new file.
-2. Update the `<title>`, the `<time>`, the `<h1>`, and the body.
-3. Add a new `<li class="entry">` to the top of the list in `writing/index.html`.
 
 ## Running locally
 
-It's static — open `index.html` directly, or serve the folder:
-
 ```
-python3 -m http.server 8000
+npm install
+npm run serve      # live-reloading dev server
+# or: npm run build  → outputs the static site to _site/
 ```
-
-Then visit http://localhost:8000
 
 ## Deploying
 
-A GitHub Actions workflow (`.github/workflows/deploy.yml`) publishes the site
-to GitHub Pages on every push to `main`. To turn it on:
-
-1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-2. Merge to `main` (or run the workflow manually via **Actions → Deploy → Run workflow**).
-
-The site is served at the custom domain **vermilionhereafter.com** (set via the
-`CNAME` file). The absolute URLs in `feed.xml`, `sitemap.xml`, and `robots.txt`
-point there; `og:image` and other asset paths are relative and resolve
-automatically.
-
-## Other files
-
-- `favicon.svg` — a small glowing moon, in-palette
-- `og-image.png` — 1200×630 social-share card
-- `404.html` — an in-theme "lost" page
+`.github/workflows/deploy.yml` builds with Eleventy and publishes `_site/` to
+GitHub Pages on every push to `main` — which is also how a CMS "Publish"
+becomes a live page. Served at the custom domain **vermilionhereafter.com**
+(via the `CNAME` file).

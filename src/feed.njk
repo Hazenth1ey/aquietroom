@@ -1,0 +1,23 @@
+---
+permalink: /feed.xml
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>a quiet room</title>
+    <link>https://vermilionhereafter.com/</link>
+    <description>a portal to my innerworld — quiet writing, work, and wanderings.</description>
+    <language>en</language>
+    <atom:link href="https://vermilionhereafter.com/feed.xml" rel="self" type="application/rss+xml" />
+{%- for post in collections.posts | reverse %}
+    <item>
+      <title>{{ post.data.title }}</title>
+      <link>https://vermilionhereafter.com{{ post.url }}</link>
+      <guid>https://vermilionhereafter.com{{ post.url }}</guid>
+      <pubDate>{{ post.date | rfc822 }}</pubDate>
+      <description>{{ post.data.description }}</description>
+    </item>
+{%- endfor %}
+  </channel>
+</rss>
