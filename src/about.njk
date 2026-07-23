@@ -26,9 +26,10 @@ description: "About the person behind this quiet room."
 
     {{ about.body | md | safe }}
 
-    <h2>{{ about.links_heading }}</h2>
-    <p>{{ about.links_intro }}</p>
+    {% if about.links_heading %}<h2>{{ about.links_heading }}</h2>{% endif %}
+    {% if about.links_intro %}<p>{{ about.links_intro }}</p>{% endif %}
 
+    {% if about.links and about.links.length %}
     <ul class="links">
       {% for l in about.links %}
       <li>
@@ -39,6 +40,7 @@ description: "About the person behind this quiet room."
       </li>
       {% endfor %}
     </ul>
+    {% endif %}
 
     <a href="/" class="back">back to the door</a>
   </div>
