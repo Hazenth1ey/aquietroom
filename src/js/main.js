@@ -7,6 +7,9 @@
     "(prefers-reduced-motion: reduce)"
   ).matches;
 
+  // Live loudness of the ambient track (0..1), shared with the dust.
+  let audioLevel = 0;
+
   /* ---- Reveal elements as they settle in ---- */
   function reveal() {
     const items = document.querySelectorAll("[data-reveal]");
@@ -85,7 +88,7 @@
       for (const m of motes) {
         m.x += m.vx;
         m.y += m.vy;
-        m.tw += 0.008;
+        m.tw += 0.008 * (1 + audioLevel * 1.4);
 
         if (m.x < -5) m.x = w + 5;
         if (m.x > w + 5) m.x = -5;
@@ -95,9 +98,13 @@
         // deeper (larger) motes parallax more
         const ox = par.x * m.r * 5;
         const oy = par.y * m.r * 5;
-        const alpha = m.a * (0.55 + 0.45 * Math.sin(m.tw));
+        // dust breathes with the music
+        const twSpeedApplied = m.tw; // (twinkle already advanced above)
+        let alpha = m.a * (0.55 + 0.45 * Math.sin(twSpeedApplied)) * (1 + audioLevel * 0.9);
+        if (alpha > 1) alpha = 1;
+        const r = m.r * (1 + audioLevel * 0.6);
         ctx.beginPath();
-        ctx.arc(m.x + ox, m.y + oy, m.r, 0, Math.PI * 2);
+        ctx.arc(m.x + ox, m.y + oy, r, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(" + m.tint + "," + alpha.toFixed(3) + ")";
         ctx.fill();
       }
@@ -155,37 +162,64 @@
     })();
   }
 
-  /* ---- Optional ambient soundscape (a looping track, off by default) ----
-     Decode the whole file into a buffer and play that — clean and glitch-free,
-     unlike streaming a media element through Web Audio. */
+  /* ---- Optional ambient soundscape (a playlist, off by default) ----
+     Tracks come from the CMS-managed list injected in #soundtrack. Each is
+     decoded into a buffer and played through a gain node; an analyser feeds
+     the dust. Multiple tracks play in sequence and loop. */
   function soundscape() {
     const btn = document.getElementById("sound-toggle");
     if (!btn) return;
     const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) { btn.remove(); return; }
 
-    const TRACK = "/audio/ambient.mp3";
+    let tracks = [];
+    try {
+      const el = document.getElementById("soundtrack");
+      if (el) tracks = (JSON.parse(el.textContent) || []).filter((t) => t && t.src);
+    } catch (e) {}
+
+    if (!AC || !tracks.length) { btn.remove(); return; }
+
     const LEVEL = 0.6; // ceiling volume
-
-    let ctx, gain, source = null, buffer = null, loading = null, playing = false;
+    let ctx, gain, analyser, source = null, playing = false, idx = 0;
+    const buffers = {};
 
     function ensureCtx() {
       if (ctx) return;
       ctx = new AC();
       gain = ctx.createGain();
       gain.gain.value = 0.0001;
+      analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
       gain.connect(ctx.destination);
+      gain.connect(analyser); // tap for the reactive dust
+      meter();
     }
 
-    function load() {
-      if (buffer) return Promise.resolve(buffer);
-      if (loading) return loading;
-      ensureCtx();
-      loading = fetch(TRACK)
+    // Continuously translate the track's loudness into audioLevel (0..1).
+    function meter() {
+      const data = new Uint8Array(analyser.fftSize);
+      (function tick() {
+        let target = 0;
+        if (playing) {
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+          }
+          target = Math.min(1, Math.sqrt(sum / data.length) * 3.2);
+        }
+        audioLevel += (target - audioLevel) * 0.12;
+        requestAnimationFrame(tick);
+      })();
+    }
+
+    function loadBuffer(src) {
+      if (buffers[src]) return Promise.resolve(buffers[src]);
+      return fetch(src)
         .then((r) => r.arrayBuffer())
         .then((ab) => ctx.decodeAudioData(ab))
-        .then((buf) => { buffer = buf; return buf; });
-      return loading;
+        .then((buf) => (buffers[src] = buf));
     }
 
     function ramp(to, dur) {
@@ -195,14 +229,25 @@
       gain.gain.linearRampToValueAtTime(Math.max(to, 0.0001), now + dur);
     }
 
-    function armResume() {
-      const once = () => {
-        if (ctx && ctx.state === "suspended") ctx.resume();
-        window.removeEventListener("pointerdown", once);
-        window.removeEventListener("keydown", once);
-      };
-      window.addEventListener("pointerdown", once);
-      window.addEventListener("keydown", once);
+    function playIndex(i, fadeIn) {
+      const src = tracks[i].src;
+      return loadBuffer(src).then((buf) => {
+        if (!playing) return;
+        source = ctx.createBufferSource();
+        source.buffer = buf;
+        source.loop = tracks.length === 1;
+        source.connect(gain);
+        source.onended = () => {
+          if (playing && tracks.length > 1) {
+            idx = (idx + 1) % tracks.length;
+            playIndex(idx, false);
+          }
+        };
+        source.start(0);
+        if (fadeIn) ramp(LEVEL, 3);
+        // preload the next track for a smoother handoff
+        if (tracks.length > 1) loadBuffer(tracks[(i + 1) % tracks.length].src).catch(() => {});
+      });
     }
 
     function play() {
@@ -210,22 +255,12 @@
       playing = true;
       btn.setAttribute("aria-pressed", "true");
       try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
-      return load()
-        .then(() => {
-          if (!playing) return; // toggled off while loading
-          if (ctx.state === "suspended") ctx.resume().catch(() => {});
-          if (source) return; // already sounding
-          source = ctx.createBufferSource();
-          source.buffer = buffer;
-          source.loop = true;
-          source.connect(gain);
-          source.start(0);
-          ramp(LEVEL, 3);
-        })
-        .catch(() => {
-          playing = false;
-          btn.setAttribute("aria-pressed", "false");
-        });
+      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      if (source) return Promise.resolve();
+      return playIndex(idx, true).catch(() => {
+        playing = false;
+        btn.setAttribute("aria-pressed", "false");
+      });
     }
 
     function stop() {
@@ -236,8 +271,19 @@
         ramp(0.0001, 1.3);
         const s = source;
         source = null;
+        s.onended = null;
         setTimeout(() => { try { s.stop(); } catch (e) {} }, 1500);
       }
+    }
+
+    function armResume() {
+      const once = () => {
+        if (ctx && ctx.state === "suspended") ctx.resume();
+        window.removeEventListener("pointerdown", once);
+        window.removeEventListener("keydown", once);
+      };
+      window.addEventListener("pointerdown", once);
+      window.addEventListener("keydown", once);
     }
 
     btn.addEventListener("click", () => (playing ? stop() : play()));
@@ -259,7 +305,7 @@
     try { wasOn = localStorage.getItem("qr_sound") === "on"; } catch (e) {}
     if (entered || wasOn) {
       play().then(() => {
-        if (ctx && ctx.state === "suspended") armResume(); // autoplay blocked → first move starts it
+        if (ctx && ctx.state === "suspended") armResume();
       });
     }
   }

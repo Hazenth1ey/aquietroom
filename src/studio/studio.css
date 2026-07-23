@@ -187,6 +187,21 @@ input, button, textarea { font-family: inherit; }
 .pr-del:hover { color: var(--danger); }
 .muted { color: var(--ink-faint); }
 
+/* ---------- soundtrack ---------- */
+.track-list { display: flex; flex-direction: column; }
+.track-row {
+  display: flex; align-items: center; gap: 0.9rem;
+  padding: 0.85rem 0.4rem; border-top: 1px solid var(--line);
+}
+.track-row:last-child { border-bottom: 1px solid var(--line); }
+.track-ord { width: 1.4rem; text-align: center; color: var(--ink-faint); font-size: 0.85rem; }
+.track-title {
+  flex: 1; min-width: 0; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 0.5rem 0.7rem; color: var(--ink); font-size: 0.9rem;
+}
+.track-title:focus { outline: none; border-color: var(--glow); }
+.track-src { font-size: 0.72rem; color: var(--ink-faint); max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ---------- toast ---------- */
 .toast {
   position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
