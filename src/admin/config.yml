@@ -7,7 +7,7 @@ backend:
   name: github
   repo: Hazenth1ey/aquietroom
   branch: main
-  base_url: https://REPLACE-WITH-YOUR-OAUTH-WORKER.workers.dev
+  base_url: https://aquietroom-auth.ivankolly.workers.dev
   auth_endpoint: auth
 
 site_url: https://vermilionhereafter.com
