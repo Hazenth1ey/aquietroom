@@ -26,7 +26,7 @@ module.exports = function (eleventyConfig) {
   // --- Posts collection: exclude drafts, oldest→newest (for prev/next) ---
   eleventyConfig.addCollection("posts", (api) =>
     api
-      .getFilteredByGlob("src/writing/posts/*.md")
+      .getFilteredByGlob("src/journal/posts/*.md")
       .filter((p) => !p.data.draft)
       .sort((a, b) => a.date - b.date)
   );

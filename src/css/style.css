@@ -225,6 +225,32 @@ a { color: var(--glow); }
 
 .portal .title { position: relative; }
 
+/* Splash landing — the whole screen is the door */
+.splash {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.splash .subtitle { margin-top: 1.5rem; }
+.splash-enter {
+  margin-top: 3.5rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  transition: color 0.6s var(--ease), letter-spacing 0.6s var(--ease);
+}
+.splash-enter::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 2.5rem;
+  margin: 1.25rem auto 0;
+  background: linear-gradient(var(--ink-faint), transparent);
+  opacity: 0.5;
+}
+.splash:hover .splash-enter { color: var(--glow); letter-spacing: 0.5em; }
+
 .enter {
   margin-top: 3.5rem;
   display: flex;
