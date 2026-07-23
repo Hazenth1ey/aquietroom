@@ -155,85 +155,112 @@
     })();
   }
 
-  /* ---- Optional ambient soundscape (a looping track, off by default) ---- */
+  /* ---- Optional ambient soundscape (a looping track, off by default) ----
+     Decode the whole file into a buffer and play that — clean and glitch-free,
+     unlike streaming a media element through Web Audio. */
   function soundscape() {
     const btn = document.getElementById("sound-toggle");
     if (!btn) return;
     const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { btn.remove(); return; }
 
     const TRACK = "/audio/ambient.mp3";
-    const LEVEL = 0.55; // ceiling volume
+    const LEVEL = 0.6; // ceiling volume
 
-    let ctx, gain, audio, started = false, playing = false, fadeTimer = null;
+    let ctx, gain, source = null, buffer = null, loading = null, playing = false;
 
-    function build() {
-      audio = new Audio(TRACK);
-      audio.loop = true;
-      audio.preload = "auto";
-      // Web Audio gives us reliable cross-browser fades (element.volume is
-      // read-only on iOS). Same-origin file, so no CORS tainting.
-      if (AC) {
-        ctx = new AC();
-        const srcNode = ctx.createMediaElementSource(audio);
-        gain = ctx.createGain();
-        gain.gain.value = 0.0001;
-        srcNode.connect(gain);
-        gain.connect(ctx.destination);
-      } else {
-        audio.volume = 0;
-      }
-      started = true;
+    function ensureCtx() {
+      if (ctx) return;
+      ctx = new AC();
+      gain = ctx.createGain();
+      gain.gain.value = 0.0001;
+      gain.connect(ctx.destination);
+    }
+
+    function load() {
+      if (buffer) return Promise.resolve(buffer);
+      if (loading) return loading;
+      ensureCtx();
+      loading = fetch(TRACK)
+        .then((r) => r.arrayBuffer())
+        .then((ab) => ctx.decodeAudioData(ab))
+        .then((buf) => { buffer = buf; return buf; });
+      return loading;
     }
 
     function ramp(to, dur) {
-      if (gain) {
-        const now = ctx.currentTime;
-        gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
-        gain.gain.linearRampToValueAtTime(Math.max(to, 0.0001), now + dur);
-        return;
-      }
-      // Fallback: fade element volume with an interval.
-      clearInterval(fadeTimer);
-      const from = audio.volume, t0 = Date.now();
-      fadeTimer = setInterval(() => {
-        const k = Math.min(1, (Date.now() - t0) / (dur * 1000));
-        audio.volume = Math.max(0, Math.min(1, from + (to - from) * k));
-        if (k >= 1) clearInterval(fadeTimer);
-      }, 40);
+      const now = ctx.currentTime;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
+      gain.gain.linearRampToValueAtTime(Math.max(to, 0.0001), now + dur);
     }
 
-    function play() {
-      if (!started) build();
-      if (ctx && ctx.state === "suspended") ctx.resume();
-      const p = audio.play();
-      if (p && p.catch) p.catch(() => {});
-      ramp(LEVEL, 3);
-      playing = true;
-      btn.setAttribute("aria-pressed", "true");
-      try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
-    }
-    function stop() {
-      ramp(0.0001, 1.3);
-      playing = false;
-      btn.setAttribute("aria-pressed", "false");
-      try { localStorage.setItem("qr_sound", "off"); } catch (e) {}
-      setTimeout(() => { if (!playing && audio) try { audio.pause(); } catch (e) {} }, 1500);
-    }
-
-    btn.addEventListener("click", () => (playing ? stop() : play()));
-
-    // If it was on last visit, resume on the first interaction (autoplay rules).
-    let wasOn = false;
-    try { wasOn = localStorage.getItem("qr_sound") === "on"; } catch (e) {}
-    if (wasOn) {
+    function armResume() {
       const once = () => {
-        play();
+        if (ctx && ctx.state === "suspended") ctx.resume();
         window.removeEventListener("pointerdown", once);
         window.removeEventListener("keydown", once);
       };
       window.addEventListener("pointerdown", once);
       window.addEventListener("keydown", once);
+    }
+
+    function play() {
+      ensureCtx();
+      playing = true;
+      btn.setAttribute("aria-pressed", "true");
+      try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
+      return load()
+        .then(() => {
+          if (!playing) return; // toggled off while loading
+          if (ctx.state === "suspended") ctx.resume().catch(() => {});
+          if (source) return; // already sounding
+          source = ctx.createBufferSource();
+          source.buffer = buffer;
+          source.loop = true;
+          source.connect(gain);
+          source.start(0);
+          ramp(LEVEL, 3);
+        })
+        .catch(() => {
+          playing = false;
+          btn.setAttribute("aria-pressed", "false");
+        });
+    }
+
+    function stop() {
+      playing = false;
+      btn.setAttribute("aria-pressed", "false");
+      try { localStorage.setItem("qr_sound", "off"); } catch (e) {}
+      if (ctx && source) {
+        ramp(0.0001, 1.3);
+        const s = source;
+        source = null;
+        setTimeout(() => { try { s.stop(); } catch (e) {} }, 1500);
+      }
+    }
+
+    btn.addEventListener("click", () => (playing ? stop() : play()));
+
+    // Clicking through the splash arms the sound for the room we enter.
+    const splash = document.querySelector(".splash");
+    if (splash) {
+      splash.addEventListener("click", () => {
+        try { sessionStorage.setItem("qr_enter", "1"); } catch (e) {}
+      });
+    }
+
+    // Autostart when arriving from the splash, or if it was on last visit.
+    let entered = false, wasOn = false;
+    try {
+      entered = sessionStorage.getItem("qr_enter") === "1";
+      if (entered) sessionStorage.removeItem("qr_enter");
+    } catch (e) {}
+    try { wasOn = localStorage.getItem("qr_sound") === "on"; } catch (e) {}
+    if (entered || wasOn) {
+      play().then(() => {
+        if (ctx && ctx.state === "suspended") armResume(); // autoplay blocked → first move starts it
+      });
     }
   }
 
