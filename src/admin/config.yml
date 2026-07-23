@@ -35,3 +35,49 @@ collections:
       - { label: "Summary (shown in the list & RSS)", name: "description", widget: "string" }
       - { label: "Lede (opening line, optional)", name: "lede", widget: "string", required: false }
       - { label: "Body", name: "body", widget: "markdown" }
+
+  - name: pages
+    label: "Pages"
+    description: "Edit the About and Projects pages."
+    files:
+      - name: about
+        label: "About page"
+        file: "src/_data/about.json"
+        description: "The About page."
+        fields:
+          - { label: "Eyebrow (small label)", name: "eyebrow", widget: "string" }
+          - { label: "Heading", name: "heading", widget: "string" }
+          - { label: "Lede (opening line)", name: "lede", widget: "text" }
+          - { label: "Body", name: "body", widget: "markdown" }
+          - { label: "Links heading", name: "links_heading", widget: "string" }
+          - { label: "Links intro", name: "links_intro", widget: "text" }
+          - label: "Links"
+            name: "links"
+            widget: "list"
+            label_singular: "Link"
+            summary: "{{fields.label}} — {{fields.url}}"
+            fields:
+              - { label: "Label", name: "label", widget: "string" }
+              - { label: "URL", name: "url", widget: "string", hint: "e.g. https://… or mailto:you@example.com" }
+              - label: "Icon"
+                name: "icon"
+                widget: "select"
+                default: "link"
+                options: ["email", "github", "twitter", "instagram", "linkedin", "facebook", "rss", "link"]
+      - name: projects
+        label: "Projects page"
+        file: "src/_data/projects.json"
+        description: "The Projects page."
+        fields:
+          - { label: "Intro", name: "intro", widget: "text" }
+          - label: "Projects"
+            name: "items"
+            widget: "list"
+            label_singular: "Project"
+            summary: "{{fields.title}}"
+            fields:
+              - { label: "Title", name: "title", widget: "string" }
+              - { label: "Year", name: "year", widget: "string", required: false, hint: "e.g. 2026, or leave blank" }
+              - { label: "Description", name: "description", widget: "text" }
+              - { label: "Tags", name: "tags", widget: "list", required: false, hint: "e.g. html, css" }
+              - { label: "Link (optional)", name: "url", widget: "string", required: false }

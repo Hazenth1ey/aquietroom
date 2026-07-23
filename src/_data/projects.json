@@ -1,0 +1,26 @@
+{
+  "intro": "A handful of things I've built, broken, and come back to.",
+  "items": [
+    {
+      "title": "a quiet room",
+      "year": "2026",
+      "description": "This very place — a hand-built portal for writing and wandering. No framework, no noise, just plain HTML and a little drifting dust.",
+      "tags": ["html", "css", "canvas"],
+      "url": ""
+    },
+    {
+      "title": "untitled, in progress",
+      "year": "—",
+      "description": "Something I'm still shaping in the dark. It'll surface here when it's ready to be seen.",
+      "tags": ["soon"],
+      "url": ""
+    },
+    {
+      "title": "a small experiment",
+      "year": "—",
+      "description": "Replace me with something real — a tool, a sketch, a thing you love. Each card links out when it's ready.",
+      "tags": ["placeholder"],
+      "url": ""
+    }
+  ]
+}

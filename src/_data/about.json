@@ -1,0 +1,14 @@
+{
+  "eyebrow": "about",
+  "heading": "who keeps this room",
+  "lede": "This is a small, quiet place I keep for myself — and for anyone who wanders in.",
+  "body": "I made this room as somewhere to think out loud without the noise. It's part journal, part workshop, part window into the things I notice when the world goes still. Writing lives here, and the projects I've been slowly tending to, and whatever else feels worth setting down.\n\nI'm drawn to slow ideas, unfinished thoughts, and the space between things. If any of that resonates, you're welcome to stay a while.",
+  "links_heading": "Elsewhere",
+  "links_intro": "You can reach me by letter, or find me wandering in a few other corners of the internet.",
+  "links": [
+    { "label": "email", "url": "mailto:hello@example.com", "icon": "email" },
+    { "label": "social", "url": "#", "icon": "facebook" },
+    { "label": "code", "url": "#", "icon": "github" },
+    { "label": "rss", "url": "/feed.xml", "icon": "rss" }
+  ]
+}
