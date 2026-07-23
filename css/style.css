@@ -46,6 +46,23 @@ body {
   opacity: 0.55;
 }
 
+/* A soft light that follows the cursor (portal pages, fine pointers only) */
+.cursor-glow {
+  position: fixed;
+  top: 0; left: 0;
+  width: 40rem;
+  height: 40rem;
+  margin: -20rem 0 0 -20rem;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(157,176,216,0.10), rgba(157,176,216,0.04) 35%, transparent 65%);
+  transition: opacity 1.2s var(--ease);
+  will-change: transform;
+}
+.cursor-glow.is-awake { opacity: 1; }
+
 /* A slow radial breath of light behind content */
 body::before {
   content: "";

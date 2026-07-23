@@ -100,8 +100,46 @@
     frame();
   }
 
+  /* ---- A soft light that trails the cursor on the portal ---- */
+  function cursorGlow() {
+    if (reduceMotion) return;
+    if (!document.querySelector(".portal")) return; // portal + 404 only
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+
+    const glow = document.createElement("div");
+    glow.className = "cursor-glow";
+    document.body.appendChild(glow);
+
+    let tx = innerWidth / 2,
+      ty = innerHeight / 2,
+      x = tx,
+      y = ty,
+      awake = false;
+
+    window.addEventListener(
+      "pointermove",
+      (e) => {
+        tx = e.clientX;
+        ty = e.clientY;
+        if (!awake) {
+          awake = true;
+          glow.classList.add("is-awake");
+        }
+      },
+      { passive: true }
+    );
+
+    (function trail() {
+      x += (tx - x) * 0.08;
+      y += (ty - y) * 0.08;
+      glow.style.transform = "translate(" + x + "px," + y + "px)";
+      requestAnimationFrame(trail);
+    })();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     reveal();
     ambient();
+    cursorGlow();
   });
 })();

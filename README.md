@@ -30,3 +30,20 @@ python3 -m http.server 8000
 ```
 
 Then visit http://localhost:8000
+
+## Deploying
+
+A GitHub Actions workflow (`.github/workflows/deploy.yml`) publishes the site
+to GitHub Pages on every push to `main`. To turn it on:
+
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Merge to `main` (or run the workflow manually via **Actions → Deploy → Run workflow**).
+
+If you use a custom domain, update the absolute-URL bits (the `og:image` paths
+are relative and will resolve automatically).
+
+## Other files
+
+- `favicon.svg` — a small glowing moon, in-palette
+- `og-image.png` — 1200×630 social-share card
+- `404.html` — an in-theme "lost" page
