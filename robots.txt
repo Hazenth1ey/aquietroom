@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://hazenth1ey.github.io/aquietroom/sitemap.xml
+Sitemap: https://vermilionhereafter.com/sitemap.xml
