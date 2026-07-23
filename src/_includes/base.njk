@@ -23,9 +23,9 @@
 
   {% if header != false %}
   <header class="site-head">
-    <a href="/" class="mark">a quiet room</a>
+    <a href="/home/" class="mark">a quiet room</a>
     <nav class="nav" aria-label="Primary">
-      <a href="/writing/"{% if nav == "writing" %} aria-current="page"{% endif %}>writing</a>
+      <a href="/journal/"{% if nav == "journal" %} aria-current="page"{% endif %}>journal</a>
       <a href="/projects/"{% if nav == "projects" %} aria-current="page"{% endif %}>projects</a>
       <a href="/about/"{% if nav == "about" %} aria-current="page"{% endif %}>about</a>
     </nav>
@@ -37,7 +37,7 @@
   {% if footer != false %}
   <footer class="site-foot">
     <span>a quiet room</span>
-    <a href="/">a portal to my innerworld</a>
+    <a href="/home/">a portal to my innerworld</a>
   </footer>
   {% endif %}
 

@@ -10,7 +10,7 @@
   const CONFIG = {
     repo: "Hazenth1ey/aquietroom",
     branch: "main",
-    postsDir: "src/writing/posts",
+    postsDir: "src/journal/posts",
     uploadsDir: "src/uploads",
     authBase: "https://aquietroom-auth.ivankolly.workers.dev",
   };
