@@ -12,16 +12,25 @@
   <!-- Rich Markdown editor -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.min.css" />
-  <link rel="stylesheet" href="/studio/studio.css?v=3" />
+  <link rel="stylesheet" href="/studio/studio.css?v=4" />
 </head>
 <body>
+  <div class="studio-bg" aria-hidden="true">
+    <div class="glow glow-a"></div>
+    <div class="glow glow-b"></div>
+    <div class="grain"></div>
+  </div>
+
   <!-- ===================== LOGIN ===================== -->
   <section id="login" class="login">
     <div class="login-card">
+      <div class="login-mark">✦</div>
       <p class="eyebrow">the studio</p>
       <h1>a quiet room</h1>
-      <p class="login-sub">Sign in to write.</p>
-      <button id="login-btn" class="btn btn-primary">Sign in with GitHub</button>
+      <p class="login-sub">Sign in to tend the room.</p>
+      <button id="login-btn" class="btn btn-primary btn-lg">
+        <span class="gh-glyph">⌥</span> Sign in with GitHub
+      </button>
       <p id="login-error" class="login-error" hidden></p>
     </div>
   </section>
