@@ -46,6 +46,76 @@ body {
   opacity: 0.55;
 }
 
+/* ---------------------------------------------------------
+   Immersion — soft page transitions, film grain, vignette,
+   ambient-sound toggle
+   --------------------------------------------------------- */
+
+/* Cross-fade between pages where supported */
+@view-transition { navigation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.55s; }
+
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.grain {
+  position: absolute;
+  inset: -50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.045;
+  animation: grain 0.7s steps(3) infinite;
+}
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6%, 4%); }
+  40% { transform: translate(5%, -5%); }
+  60% { transform: translate(-4%, -6%); }
+  80% { transform: translate(6%, 5%); }
+}
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(130% 110% at 50% 34%, transparent 52%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.sound-toggle {
+  position: fixed;
+  right: 1.35rem;
+  bottom: 1.35rem;
+  z-index: 6;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(14, 14, 21, 0.55);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  color: var(--ink-faint);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: color 0.4s var(--ease), border-color 0.4s var(--ease), transform 0.4s var(--ease);
+}
+.sound-toggle:hover { color: var(--ink); border-color: var(--glow); transform: translateY(-2px); }
+.sound-toggle .bars { display: flex; align-items: center; gap: 2px; height: 14px; }
+.sound-toggle .bars i { width: 2px; height: 4px; background: currentColor; border-radius: 2px; transition: height 0.3s var(--ease); }
+.sound-toggle[aria-pressed="true"] { color: var(--glow); border-color: rgba(157, 176, 216, 0.4); }
+.sound-toggle[aria-pressed="true"] .bars i { animation: bars 1.1s ease-in-out infinite; }
+.sound-toggle[aria-pressed="true"] .bars i:nth-child(2) { animation-delay: 0.18s; }
+.sound-toggle[aria-pressed="true"] .bars i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes bars { 0%, 100% { height: 4px; } 50% { height: 13px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .grain { animation: none; }
+  .sound-toggle[aria-pressed="true"] .bars i { animation: none; height: 9px; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
+}
+
 /* A soft light that follows the cursor (portal pages, fine pointers only) */
 .cursor-glow {
   position: fixed;

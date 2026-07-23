@@ -20,6 +20,10 @@
 </head>
 <body>
   <canvas id="ambient"></canvas>
+  <div class="atmosphere" aria-hidden="true">
+    <div class="grain"></div>
+    <div class="vignette"></div>
+  </div>
 
   {% if header != false %}
   <header class="site-head">
@@ -40,6 +44,10 @@
     <a href="/home/">a portal to my innerworld</a>
   </footer>
   {% endif %}
+
+  <button id="sound-toggle" class="sound-toggle" aria-pressed="false" aria-label="Toggle ambient sound" title="Ambient sound">
+    <span class="bars"><i></i><i></i><i></i></span>
+  </button>
 
   <script src="/js/main.js"></script>
 </body>

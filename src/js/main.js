@@ -38,6 +38,19 @@
 
     let w, h, dpr, motes;
 
+    // Pointer parallax — the field drifts gently as you move.
+    const par = { x: 0, y: 0, tx: 0, ty: 0 };
+    if (window.matchMedia("(pointer: fine)").matches) {
+      window.addEventListener(
+        "pointermove",
+        (e) => {
+          par.tx = (e.clientX / innerWidth - 0.5) * 2;
+          par.ty = (e.clientY / innerHeight - 0.5) * 2;
+        },
+        { passive: true }
+      );
+    }
+
     function size() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = canvas.width = Math.floor(innerWidth * dpr);
@@ -67,6 +80,8 @@
 
     function frame() {
       ctx.clearRect(0, 0, w, h);
+      par.x += (par.tx - par.x) * 0.05;
+      par.y += (par.ty - par.y) * 0.05;
       for (const m of motes) {
         m.x += m.vx;
         m.y += m.vy;
@@ -77,9 +92,12 @@
         if (m.y < -5) m.y = h + 5;
         if (m.y > h + 5) m.y = -5;
 
+        // deeper (larger) motes parallax more
+        const ox = par.x * m.r * 5;
+        const oy = par.y * m.r * 5;
         const alpha = m.a * (0.55 + 0.45 * Math.sin(m.tw));
         ctx.beginPath();
-        ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+        ctx.arc(m.x + ox, m.y + oy, m.r, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(" + m.tint + "," + alpha.toFixed(3) + ")";
         ctx.fill();
       }
@@ -137,9 +155,100 @@
     })();
   }
 
+  /* ---- Optional ambient soundscape (synthesized, off by default) ---- */
+  function soundscape() {
+    const btn = document.getElementById("sound-toggle");
+    if (!btn) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { btn.remove(); return; }
+
+    let ctx, master, lfo, started = false, playing = false;
+
+    function build() {
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.0001;
+      master.connect(ctx.destination);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 640;
+      filter.Q.value = 0.5;
+      filter.connect(master);
+
+      // a soft, low drone chord (A2 · E3 · A3 · C#4)
+      const voices = [
+        { f: 110.0, g: 0.5, t: "triangle" },
+        { f: 164.81, g: 0.3, t: "sine" },
+        { f: 220.0, g: 0.34, t: "triangle" },
+        { f: 277.18, g: 0.16, t: "sine" },
+      ];
+      voices.forEach((v, i) => {
+        const o = ctx.createOscillator();
+        o.type = v.t;
+        o.frequency.value = v.f;
+        o.detune.value = (i - 1.5) * 4;
+        const g = ctx.createGain();
+        g.gain.value = v.g;
+        o.connect(g);
+        g.connect(filter);
+        o.start();
+      });
+
+      // slow "breathing" on the master level
+      lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.07;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 0.022;
+      lfo.connect(lfoGain);
+      lfoGain.connect(master.gain);
+      lfo.start();
+
+      started = true;
+    }
+
+    function ramp(to, dur) {
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), now);
+      master.gain.linearRampToValueAtTime(to, now + dur);
+    }
+
+    function play() {
+      if (!started) build();
+      if (ctx.state === "suspended") ctx.resume();
+      ramp(0.08, 3.5);
+      playing = true;
+      btn.setAttribute("aria-pressed", "true");
+      try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
+    }
+    function stop() {
+      if (started) ramp(0.0001, 1.4);
+      playing = false;
+      btn.setAttribute("aria-pressed", "false");
+      try { localStorage.setItem("qr_sound", "off"); } catch (e) {}
+    }
+
+    btn.addEventListener("click", () => (playing ? stop() : play()));
+
+    // If it was on last visit, resume on the first interaction (autoplay rules).
+    let wasOn = false;
+    try { wasOn = localStorage.getItem("qr_sound") === "on"; } catch (e) {}
+    if (wasOn) {
+      const once = () => {
+        play();
+        window.removeEventListener("pointerdown", once);
+        window.removeEventListener("keydown", once);
+      };
+      window.addEventListener("pointerdown", once);
+      window.addEventListener("keydown", once);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     reveal();
     ambient();
     cursorGlow();
+    soundscape();
   });
 })();
