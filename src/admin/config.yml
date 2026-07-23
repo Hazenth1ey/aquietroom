@@ -1,8 +1,9 @@
-# Decap CMS configuration — the back office for "a quiet room".
+# CMS configuration — the back office / studio for "a quiet room".
+# Read by Sveltia CMS (a modern, Decap-compatible editor). This same file
+# works with Decap too, so the setup is portable.
 #
-# Auth: Decap needs a tiny GitHub OAuth proxy. Deploy the Cloudflare Worker
-# described in DECAP-SETUP.md, then replace the base_url below with its URL
-# (e.g. https://quietroom-auth.<your-subdomain>.workers.dev).
+# Auth: uses a tiny GitHub OAuth proxy (Cloudflare Worker) — see DECAP-SETUP.md.
+# base_url below points at it.
 backend:
   name: github
   repo: Hazenth1ey/aquietroom
