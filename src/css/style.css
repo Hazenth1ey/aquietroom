@@ -123,9 +123,28 @@ body {
 .skiper-toggle:hover .sk-reveal,
 .skiper-toggle:focus-visible .sk-reveal,
 .skiper-toggle:active .sk-reveal { opacity: 1; transform: none; transition-delay: 0.15s; }
-.sk-bar { width: 56px; height: 8px; border-radius: 999px; background: rgba(231, 228, 238, 0.22); flex: none; }
-/* dots are driven by JS from the live audio level (see meter() in main.js) */
-.sk-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(231, 228, 238, 0.35); flex: none; opacity: 0.4; will-change: opacity, transform; }
+/* the current track's title, fading at the edges, drifting if too long */
+.sk-title-wrap {
+  width: 112px;
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+.sk-title {
+  display: inline-block;
+  padding: 0 8px;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.sk-title.is-scrolling { animation: sk-drift var(--sk-dur, 9s) linear infinite alternate; }
+@keyframes sk-drift {
+  0%, 12% { transform: translateX(0); }
+  88%, 100% { transform: translateX(var(--sk-shift, -40px)); }
+}
 
 /* the knob: play glyph when off, equalizer bars when playing */
 .sk-knob { flex: none; width: 40px; height: 40px; border-radius: 50%; background: rgba(157, 176, 216, 0.12); display: grid; place-items: center; color: var(--ink-faint); transition: color 0.4s var(--ease), background 0.4s var(--ease); }
@@ -144,7 +163,7 @@ body {
   .grain { animation: none; }
   .skiper-toggle { transition: none; }
   .skiper-toggle[aria-pressed="true"] .sk-eq i,
-  .skiper-toggle[aria-pressed="true"] .sk-dot { opacity: 0.8 !important; transform: none !important; }
+  .sk-title.is-scrolling { animation: none; }
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none; }
 }

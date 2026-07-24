@@ -222,15 +222,9 @@
       meter();
     }
 
-    // Continuously translate the track's loudness into audioLevel (0..1),
-    // and let it ripple across the toggle's dots — each dot reads the level
-    // a little further in the past, so loudness travels along the row.
+    // Continuously translate the track's loudness into audioLevel (0..1).
     function meter() {
       const data = new Uint8Array(analyser.fftSize);
-      const dots = document.querySelectorAll(".skiper-toggle .sk-dot");
-      const HISTORY = 48; // ~0.8s at 60fps
-      const history = new Float32Array(HISTORY);
-      let head = 0;
       (function tick() {
         let target = 0;
         if (playing) {
@@ -243,25 +237,26 @@
           target = Math.min(1, Math.sqrt(sum / data.length) * 3.2);
         }
         audioLevel += (target - audioLevel) * 0.12;
-
-        history[head] = audioLevel;
-        head = (head + 1) % HISTORY;
-
-        if (dots.length && !reduceMotion) {
-          for (let i = 0; i < dots.length; i++) {
-            // dot 0 hears "now"; each next dot hears ~0.2s earlier
-            const back = i * 12;
-            const lvl = playing
-              ? history[(head - 1 - back + HISTORY * 2) % HISTORY]
-              : 0;
-            const o = playing ? 0.3 + lvl * 1.6 : 0.4;
-            const s = playing ? 1 + lvl * 0.9 : 1;
-            dots[i].style.opacity = (o > 1 ? 1 : o).toFixed(3);
-            dots[i].style.transform = "scale(" + s.toFixed(3) + ")";
-          }
-        }
         requestAnimationFrame(tick);
       })();
+    }
+
+    // Show the current track's title in the toggle; drift it if it overflows.
+    function setTitle(text) {
+      const el = document.getElementById("sk-title");
+      if (!el) return;
+      el.textContent = text || "";
+      el.classList.remove("is-scrolling");
+      el.style.removeProperty("--sk-shift");
+      requestAnimationFrame(() => {
+        const wrap = el.parentElement;
+        const overflow = el.scrollWidth - wrap.clientWidth;
+        if (overflow > 4) {
+          el.style.setProperty("--sk-shift", "-" + (overflow + 8) + "px");
+          el.style.setProperty("--sk-dur", Math.max(6, overflow / 12) + "s");
+          el.classList.add("is-scrolling");
+        }
+      });
     }
 
     function loadBuffer(src) {
@@ -281,6 +276,7 @@
 
     function playIndex(i, fadeIn) {
       const src = tracks[i].src;
+      setTitle(tracks[i].title);
       return loadBuffer(src).then((buf) => {
         if (!playing) return;
         source = ctx.createBufferSource();
@@ -337,6 +333,9 @@
     }
 
     btn.addEventListener("click", () => (playing ? stop() : play()));
+
+    // Measure/animate the server-rendered first title.
+    setTitle(tracks[0].title);
 
     // Let the router (or anything) start/stop the sound within a user gesture.
     window.__qrSound = { play: play, stop: stop, isPlaying: () => playing };
