@@ -138,7 +138,7 @@ body {
   padding: 0 18px 0 8px; /* right padding = the gap between loop copies */
   font-size: 0.7rem;
   letter-spacing: 0.14em;
-  text-transform: lowercase;
+  text-transform: none; /* show the track's own Title Case */
   color: var(--ink-dim);
   white-space: nowrap;
 }
