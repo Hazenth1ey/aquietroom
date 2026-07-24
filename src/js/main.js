@@ -125,10 +125,14 @@
     frame();
   }
 
+  /* ---- Reflect whether the current view is a portal page (splash/home/404) ---- */
+  function setPortalState() {
+    document.body.classList.toggle("is-portal", !!document.querySelector(".portal"));
+  }
+
   /* ---- A soft light that trails the cursor on the portal ---- */
   function cursorGlow() {
     if (reduceMotion) return;
-    if (!document.querySelector(".portal")) return; // portal + 404 only
     if (!window.matchMedia("(pointer: fine)").matches) return;
 
     const glow = document.createElement("div");
@@ -288,7 +292,10 @@
 
     btn.addEventListener("click", () => (playing ? stop() : play()));
 
-    // Clicking through the splash arms the sound for the room we enter.
+    // Let the router (or anything) start/stop the sound within a user gesture.
+    window.__qrSound = { play: play, stop: stop, isPlaying: () => playing };
+
+    // Full-load fallback: clicking through the splash arms the sound.
     const splash = document.querySelector(".splash");
     if (splash) {
       splash.addEventListener("click", () => {
@@ -310,10 +317,82 @@
     }
   }
 
+  /* ---- In-place navigation, so the shell (and the music) never reloads ---- */
+  function router() {
+    if (!window.history || !window.fetch || !window.DOMParser) return;
+    if (!document.getElementById("swup")) return;
+
+    let busy = false;
+
+    function internal(a) {
+      if (!a || (a.target && a.target !== "_self")) return false;
+      if (a.hasAttribute("download") || a.dataset.noRouter !== undefined) return false;
+      const href = a.getAttribute("href") || "";
+      if (!href || href[0] === "#" || /^(mailto|tel|https?:\/\/(?!)|javascript):/i.test(href)) return false;
+      let url;
+      try { url = new URL(a.href); } catch (e) { return false; }
+      if (url.origin !== location.origin) return false;
+      if (/^\/(studio|admin)\//.test(url.pathname)) return false;
+      if (/\.(xml|mp3|png|jpe?g|svg|gif|pdf|zip|webp)$/i.test(url.pathname)) return false;
+      return url;
+    }
+
+    function fetchText(url) {
+      return fetch(url, { headers: { "X-Router": "1" } })
+        .then((r) => (r.ok ? r.text() : Promise.reject()))
+        .catch(() => null);
+    }
+
+    async function go(href, push) {
+      if (busy) return;
+      busy = true;
+      const root = document.documentElement;
+      root.classList.add("is-navigating");
+      const [html] = await Promise.all([
+        fetchText(href),
+        new Promise((r) => setTimeout(r, 300)),
+      ]);
+      if (html == null) { location.href = href; return; }
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const next = doc.getElementById("swup");
+      const container = document.getElementById("swup");
+      if (!next || !container) { location.href = href; return; }
+
+      container.innerHTML = next.innerHTML;
+      document.title = doc.title;
+      if (push) history.pushState({}, "", href);
+      window.scrollTo(0, 0);
+
+      reveal();
+      setPortalState();
+      root.classList.remove("is-navigating");
+      busy = false;
+    }
+
+    document.addEventListener("click", (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target.closest("a");
+      const url = internal(a);
+      if (!url) return;
+      if (url.pathname === location.pathname && url.hash) return; // in-page anchor
+      e.preventDefault();
+      // Entering from the splash starts the music in the same gesture.
+      if (a.classList.contains("splash") && window.__qrSound && !window.__qrSound.isPlaying()) {
+        window.__qrSound.play();
+      }
+      if (url.href === location.href) return;
+      go(url.href, true);
+    });
+
+    window.addEventListener("popstate", () => go(location.href, false));
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     reveal();
     ambient();
     cursorGlow();
     soundscape();
+    setPortalState();
+    router();
   });
 })();
