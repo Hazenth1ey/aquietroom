@@ -643,11 +643,80 @@
   function renderCoreProjects() {
     const d = core.data;
     d.items = Array.isArray(d.items) ? d.items : [];
+    d.gallery = Array.isArray(d.gallery) ? d.gallery : [];
     const body = document.createElement("div");
     body.appendChild(blockField("Intro (the italic line under the heading)", d.intro, (v) => (d.intro = v), true));
 
+    /* ---- portfolio gallery ---- */
+    const gLabel = document.createElement("span");
+    gLabel.className = "field-label";
+    gLabel.textContent = "Portfolio gallery (masonry grid; click to view large)";
+    body.appendChild(gLabel);
+    const galleryBox = document.createElement("div");
+    galleryBox.className = "gallery-grid";
+    body.appendChild(galleryBox);
+
+    function renderGallery() {
+      galleryBox.innerHTML = "";
+      d.gallery.forEach((g, i) => {
+        const cell = document.createElement("div");
+        cell.className = "gallery-cell";
+        const img = document.createElement("img");
+        img.src = g.src;
+        img.alt = "";
+        cell.appendChild(img);
+        const cap = document.createElement("input");
+        cap.placeholder = "caption (optional)";
+        cap.value = g.caption || "";
+        cap.className = "gallery-cap";
+        cap.addEventListener("input", (e) => (g.caption = e.target.value));
+        cell.appendChild(cap);
+        const tools = document.createElement("div");
+        tools.className = "gallery-tools";
+        [["←", () => { if (i > 0) { d.gallery.splice(i - 1, 0, d.gallery.splice(i, 1)[0]); renderGallery(); } }],
+         ["→", () => { if (i < d.gallery.length - 1) { d.gallery.splice(i + 1, 0, d.gallery.splice(i, 1)[0]); renderGallery(); } }],
+         ["✕", () => { if (confirm("Remove this image from the gallery?")) { d.gallery.splice(i, 1); renderGallery(); } }]]
+          .forEach(([txt, fn]) => {
+            const b = document.createElement("button");
+            b.className = "blk-btn" + (txt === "✕" ? " blk-del" : "");
+            b.textContent = txt;
+            b.addEventListener("click", fn);
+            tools.appendChild(b);
+          });
+        cell.appendChild(tools);
+        galleryBox.appendChild(cell);
+      });
+
+      const addWrap = document.createElement("div");
+      addWrap.className = "gallery-cell gallery-add";
+      const add = document.createElement("button");
+      add.className = "btn btn-soft";
+      add.textContent = "＋ Add images";
+      const file = document.createElement("input");
+      file.type = "file";
+      file.accept = "image/*";
+      file.multiple = true;
+      file.hidden = true;
+      add.addEventListener("click", () => file.click());
+      file.addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files || []);
+        for (const f of files) {
+          const url = await uploadAsset(f, "image");
+          if (url) d.gallery.push({ src: url, caption: "" });
+        }
+        renderGallery();
+        if (files.length) toast(`${files.length} image${files.length > 1 ? "s" : ""} added — remember to Publish changes.`);
+        e.target.value = "";
+      });
+      addWrap.appendChild(add);
+      addWrap.appendChild(file);
+      galleryBox.appendChild(addWrap);
+    }
+    renderGallery();
+
     const label = document.createElement("span");
     label.className = "field-label";
+    label.style.marginTop = "1.4rem";
     label.textContent = "Projects";
     body.appendChild(label);
     const itemsBox = document.createElement("div");

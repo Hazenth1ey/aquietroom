@@ -5,16 +5,29 @@ seoTitle: "projects — a quiet room"
 ogTitle: "projects — a quiet room"
 description: "Things I've made and things I'm slowly tending to."
 ---
-<main class="wrap wrap--wide">
+<main class="wrap wrap--gallery">
   <p class="eyebrow" data-reveal="0">projects</p>
   <h1 class="title" data-reveal="1" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">things I'm tending to</h1>
-  <p class="lede" data-reveal="2" style="margin-top: 1.5rem; max-width: 40rem;">
+  <p class="lede" data-reveal="2" style="margin-top: 1.5rem; max-width: 44rem;">
     {{ projects.intro }}
   </p>
 
-  <ul class="works">
+  {% if projects.gallery and projects.gallery.length %}
+  <div class="masonry" data-reveal="3">
+    {% for g in projects.gallery %}
+    <figure class="masonry-item">
+      <button class="masonry-link" type="button" data-caption="{{ g.caption or '' }}" aria-label="View larger{% if g.caption %}: {{ g.caption }}{% endif %}">
+        <img src="{{ g.src }}" alt="{{ g.caption or '' }}" loading="lazy" />
+      </button>
+    </figure>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if projects.items and projects.items.length %}
+  <ul class="works"{% if projects.gallery and projects.gallery.length %} style="margin-top: 4rem;"{% endif %}>
     {% for p in projects.items %}
-    <li class="work" data-reveal="{{ loop.index0 + 3 }}">
+    <li class="work" data-reveal="{{ loop.index0 + 4 }}">
       <h3>{{ p.title }}{% if p.year %} <span class="year">{{ p.year }}</span>{% endif %}</h3>
       <p>{{ p.description }}</p>
       {% if p.tags and p.tags.length %}
@@ -26,6 +39,7 @@ description: "Things I've made and things I'm slowly tending to."
     </li>
     {% endfor %}
   </ul>
+  {% endif %}
 
   <a href="/home/" class="back">back to the room</a>
 </main>
