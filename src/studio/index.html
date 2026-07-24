@@ -12,7 +12,7 @@
   <!-- Rich Markdown editor -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.min.css" />
-  <link rel="stylesheet" href="/studio/studio.css?v=5" />
+  <link rel="stylesheet" href="/studio/studio.css?v=6" />
 </head>
 <body>
   <div class="studio-bg" aria-hidden="true">
@@ -52,6 +52,9 @@
         </button>
         <button class="nav-item" data-view="sound">
           <span class="nav-ico">♪</span> Soundtrack
+        </button>
+        <button class="nav-item" data-view="pages">
+          <span class="nav-ico">▦</span> Pages
         </button>
       </nav>
 
@@ -149,6 +152,62 @@
           <button class="btn btn-primary" id="track-save" style="margin-top: 1.5rem;">Save soundtrack</button>
         </div>
       </section>
+
+      <!-- ---------- PAGES ---------- -->
+      <section id="view-pages" class="view view-pages" hidden>
+        <!-- list of pages -->
+        <div id="pages-list-card" class="card">
+          <div class="list-head">
+            <h3 class="panel-title">Pages</h3>
+            <button class="btn btn-ghost" id="page-new">＋ New page</button>
+          </div>
+          <p class="muted" style="margin: -0.5rem 0 1.25rem;">
+            Build pages from blocks — hero, prose, image, quote, divider.
+            Pages marked "in navigation" appear in the site's menu.
+          </p>
+          <div id="pages-list" class="post-list"><p class="muted">Loading…</p></div>
+        </div>
+
+        <!-- page editor -->
+        <div id="page-editor" hidden>
+          <div class="card" style="margin-bottom: 1.3rem;">
+            <input id="pg-title" class="input-title" placeholder="Page title" />
+            <div class="pg-meta">
+              <label class="field pg-slug">
+                <span>Address</span>
+                <div class="slug-row"><em>/</em><input id="pg-slug" placeholder="page-address" /><em>/</em></div>
+              </label>
+              <label class="field pg-nav">
+                <span>Navigation</span>
+                <label class="check"><input type="checkbox" id="pg-nav" /> show in site menu</label>
+              </label>
+            </div>
+            <label class="field">
+              <span>Description (for search &amp; sharing)</span>
+              <input id="pg-desc" placeholder="One line about this page" />
+            </label>
+          </div>
+
+          <div id="pg-blocks"></div>
+
+          <div class="card add-block-card">
+            <span class="field-label">Add a block</span>
+            <div class="add-block-row">
+              <button class="btn btn-soft" data-add-block="hero">Hero</button>
+              <button class="btn btn-soft" data-add-block="prose">Prose</button>
+              <button class="btn btn-soft" data-add-block="image">Image</button>
+              <button class="btn btn-soft" data-add-block="quote">Quote</button>
+              <button class="btn btn-soft" data-add-block="divider">Divider</button>
+            </div>
+          </div>
+
+          <div class="card publish-card" style="margin-top: 1.3rem;">
+            <button id="pg-save" class="btn btn-primary btn-block">Publish page</button>
+            <button id="pg-back" class="btn btn-soft btn-block">← All pages</button>
+            <button id="pg-delete" class="btn btn-danger btn-block" hidden>Delete page</button>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -156,6 +215,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor.min.js"></script>
-  <script src="/studio/app.js?v=4"></script>
+  <script src="/studio/app.js?v=5"></script>
 </body>
 </html>

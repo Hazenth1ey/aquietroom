@@ -35,6 +35,9 @@
         <a href="/journal/"{% if nav == "journal" %} aria-current="page"{% endif %}>journal</a>
         <a href="/projects/"{% if nav == "projects" %} aria-current="page"{% endif %}>projects</a>
         <a href="/about/"{% if nav == "about" %} aria-current="page"{% endif %}>about</a>
+        {%- if sitepages %}{% for cp in sitepages %}{% if cp.nav %}
+        <a href="/{{ cp.slug }}/"{% if nav == cp.slug %} aria-current="page"{% endif %}>{{ cp.title }}</a>
+        {%- endif %}{% endfor %}{% endif %}
       </nav>
     </header>
     {% endif %}
