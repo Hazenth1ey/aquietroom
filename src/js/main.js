@@ -87,7 +87,8 @@
         baseA: 0.16 + Math.random() * 0.4,
         tw: Math.random() * Math.PI * 2,
         twSpeed: 0.004 + Math.random() * 0.012,
-        vy: -(0.015 + depth * 0.06) * dpr, // slow upward drift, nearer faster
+        // a real upward current — nearer stars rise faster, with variance
+        vy: -(0.06 + depth * 0.26 + Math.random() * 0.05) * dpr,
         tint: tint,
       };
     }
@@ -98,7 +99,7 @@
       par.y += (par.ty - par.y) * 0.05;
 
       for (const s of stars) {
-        s.y += s.vy;
+        s.y += s.vy * (1 + audioLevel * 1.6); // the current quickens with the music
         s.tw += s.twSpeed * (1 + audioLevel * 1.2);
         if (s.y < -6) {
           s.y = h + 6;
@@ -190,9 +191,12 @@
   }
 
   /* ---- Optional ambient soundscape (a playlist, off by default) ----
-     Tracks come from the CMS-managed list injected in #soundtrack. Each is
-     decoded into a buffer and played through a gain node; an analyser feeds
-     the dust. Multiple tracks play in sequence and loop. */
+     Tracks come from the CMS-managed list injected in #soundtrack. Playback
+     uses a plain <audio> element so the music keeps playing on mobile when
+     the screen locks (Web Audio gets suspended there; media elements don't),
+     and the lock screen gets play/pause controls via the Media Session API.
+     The reactive visuals read a loudness envelope precomputed from the same
+     downloaded bytes — no live audio graph needed. */
   function soundscape() {
     const btn = document.getElementById("sound-toggle");
     if (!btn) return;
@@ -204,41 +208,84 @@
       if (el) tracks = (JSON.parse(el.textContent) || []).filter((t) => t && t.src);
     } catch (e) {}
 
-    if (!AC || !tracks.length) { btn.remove(); return; }
+    if (!tracks.length) { btn.remove(); return; }
 
     const LEVEL = 0.6; // ceiling volume
-    let ctx, gain, analyser, source = null, playing = false, idx = 0;
-    const buffers = {};
+    const ENV_HZ = 10; // envelope samples per second
+    let audio = null, playing = false, idx = 0, fadeTimer = null;
+    const cache = {}; // src -> { url (blob), env (Float32Array|null) }
 
-    function ensureCtx() {
-      if (ctx) return;
-      ctx = new AC();
-      gain = ctx.createGain();
-      gain.gain.value = 0.0001;
-      analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      gain.connect(ctx.destination);
-      gain.connect(analyser); // tap for the reactive dust
-      meter();
+    // One download per track: bytes become both the playable blob URL and
+    // the loudness envelope that drives the stars/EQ.
+    function load(src) {
+      if (cache[src]) return Promise.resolve(cache[src]);
+      return fetch(src)
+        .then((r) => r.arrayBuffer())
+        .then((ab) => {
+          const entry = (cache[src] = {
+            url: URL.createObjectURL(new Blob([ab], { type: "audio/mpeg" })),
+            env: null,
+          });
+          if (!AC) return entry;
+          const actx = new AC();
+          return actx
+            .decodeAudioData(ab.slice(0))
+            .then((buf) => {
+              const ch = buf.getChannelData(0);
+              const step = Math.floor(buf.sampleRate / ENV_HZ);
+              const env = new Float32Array(Math.ceil(ch.length / step));
+              for (let i = 0; i < env.length; i++) {
+                let sum = 0, n = 0;
+                const end = Math.min((i + 1) * step, ch.length);
+                for (let j = i * step; j < end; j += 32) { sum += ch[j] * ch[j]; n++; }
+                env[i] = Math.min(1, Math.sqrt(sum / Math.max(1, n)) * 3.2);
+              }
+              entry.env = env;
+              if (actx.close) actx.close();
+              return entry;
+            })
+            .catch(() => entry);
+        });
     }
 
-    // Continuously translate the track's loudness into audioLevel (0..1).
-    function meter() {
-      const data = new Uint8Array(analyser.fftSize);
-      (function tick() {
-        let target = 0;
-        if (playing) {
-          analyser.getByteTimeDomainData(data);
-          let sum = 0;
-          for (let i = 0; i < data.length; i++) {
-            const v = (data[i] - 128) / 128;
-            sum += v * v;
-          }
-          target = Math.min(1, Math.sqrt(sum / data.length) * 3.2);
+    // Volume fade via the element (iOS ignores volume writes; harmless there).
+    function fadeTo(to, dur) {
+      clearInterval(fadeTimer);
+      if (!audio) return;
+      const from = audio.volume, t0 = Date.now();
+      fadeTimer = setInterval(() => {
+        const k = Math.min(1, (Date.now() - t0) / (dur * 1000));
+        try { audio.volume = Math.max(0, Math.min(1, from + (to - from) * k)); } catch (e) {}
+        if (k >= 1) clearInterval(fadeTimer);
+      }, 50);
+    }
+
+    // Drive audioLevel from the precomputed envelope at the playhead.
+    (function meter() {
+      let target = 0;
+      if (playing && audio && !audio.paused) {
+        const entry = cache[tracks[idx] && tracks[idx].src];
+        if (entry && entry.env) {
+          const i = Math.floor(audio.currentTime * ENV_HZ);
+          target = entry.env[Math.min(i, entry.env.length - 1)] || 0;
         }
-        audioLevel += (target - audioLevel) * 0.12;
-        requestAnimationFrame(tick);
-      })();
+      }
+      audioLevel += (target - audioLevel) * 0.12;
+      requestAnimationFrame(meter);
+    })();
+
+    // Lock-screen metadata + controls.
+    function mediaSession(title) {
+      if (!("mediaSession" in navigator)) return;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title || "ambient",
+          artist: "a quiet room",
+          artwork: [{ src: "/og-image.png", sizes: "1200x630", type: "image/png" }],
+        });
+        navigator.mediaSession.setActionHandler("play", play);
+        navigator.mediaSession.setActionHandler("pause", stop);
+      } catch (e) {}
     }
 
     // Show the current track's title as a continuous right-to-left ticker.
@@ -272,51 +319,45 @@
       });
     }
 
-    function loadBuffer(src) {
-      if (buffers[src]) return Promise.resolve(buffers[src]);
-      return fetch(src)
-        .then((r) => r.arrayBuffer())
-        .then((ab) => ctx.decodeAudioData(ab))
-        .then((buf) => (buffers[src] = buf));
-    }
-
-    function ramp(to, dur) {
-      const now = ctx.currentTime;
-      gain.gain.cancelScheduledValues(now);
-      gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
-      gain.gain.linearRampToValueAtTime(Math.max(to, 0.0001), now + dur);
-    }
-
-    function playIndex(i, fadeIn) {
-      const src = tracks[i].src;
+    function playIndex(i) {
       setTitle(tracks[i].title);
-      return loadBuffer(src).then((buf) => {
+      mediaSession(tracks[i].title);
+      return load(tracks[i].src).then((entry) => {
         if (!playing) return;
-        source = ctx.createBufferSource();
-        source.buffer = buf;
-        source.loop = tracks.length === 1;
-        source.connect(gain);
-        source.onended = () => {
-          if (playing && tracks.length > 1) {
-            idx = (idx + 1) % tracks.length;
-            playIndex(idx, false);
-          }
-        };
-        source.start(0);
-        if (fadeIn) ramp(LEVEL, 3);
+        if (!audio) audio = new Audio();
+        audio.src = entry.url;
+        audio.loop = tracks.length === 1;
+        audio.onended =
+          tracks.length > 1
+            ? () => {
+                if (playing) {
+                  idx = (idx + 1) % tracks.length;
+                  playIndex(idx);
+                }
+              }
+            : null;
+        try { audio.volume = 0; } catch (e) {}
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => armRetry());
+        fadeTo(LEVEL, 3);
         // preload the next track for a smoother handoff
-        if (tracks.length > 1) loadBuffer(tracks[(i + 1) % tracks.length].src).catch(() => {});
+        if (tracks.length > 1) load(tracks[(i + 1) % tracks.length].src).catch(() => {});
       });
     }
 
     function play() {
-      ensureCtx();
       playing = true;
       btn.setAttribute("aria-pressed", "true");
       try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
-      if (ctx.state === "suspended") ctx.resume().catch(() => {});
-      if (source) return Promise.resolve();
-      return playIndex(idx, true).catch(() => {
+      // resume the paused element if it already holds this track
+      if (audio && audio.src && audio.paused) {
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => armRetry());
+        fadeTo(LEVEL, 2);
+        return Promise.resolve();
+      }
+      if (audio && !audio.paused) return Promise.resolve();
+      return playIndex(idx).catch(() => {
         playing = false;
         btn.setAttribute("aria-pressed", "false");
       });
@@ -326,20 +367,18 @@
       playing = false;
       btn.setAttribute("aria-pressed", "false");
       try { localStorage.setItem("qr_sound", "off"); } catch (e) {}
-      if (ctx && source) {
-        ramp(0.0001, 1.3);
-        const s = source;
-        source = null;
-        s.onended = null;
-        setTimeout(() => { try { s.stop(); } catch (e) {} }, 1500);
+      if (audio && !audio.paused) {
+        fadeTo(0, 1.2);
+        setTimeout(() => { if (!playing && audio) try { audio.pause(); } catch (e) {} }, 1350);
       }
     }
 
-    function armResume() {
+    // If autoplay was blocked, retry on the first real interaction.
+    function armRetry() {
       const once = () => {
-        if (ctx && ctx.state === "suspended") ctx.resume();
         window.removeEventListener("pointerdown", once);
         window.removeEventListener("keydown", once);
+        if (playing) play();
       };
       window.addEventListener("pointerdown", once);
       window.addEventListener("keydown", once);
@@ -351,7 +390,7 @@
     setTitle(tracks[0].title);
 
     // Let the router (or anything) start/stop the sound within a user gesture.
-    window.__qrSound = { play: play, stop: stop, isPlaying: () => playing };
+    window.__qrSound = { play: play, stop: stop, isPlaying: () => playing, level: () => audioLevel };
 
     // Full-load fallback: clicking through the splash arms the sound.
     const splash = document.querySelector(".splash");
@@ -368,11 +407,7 @@
       if (entered) sessionStorage.removeItem("qr_enter");
     } catch (e) {}
     try { wasOn = localStorage.getItem("qr_sound") === "on"; } catch (e) {}
-    if (entered || wasOn) {
-      play().then(() => {
-        if (ctx && ctx.state === "suspended") armResume();
-      });
-    }
+    if (entered || wasOn) play();
   }
 
   /* ---- In-place navigation, so the shell (and the music) never reloads ---- */
