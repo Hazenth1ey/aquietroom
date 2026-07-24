@@ -1,5 +1,8 @@
 {
   "tracks": [
-    { "title": "Throughout the Flow of Years", "src": "/audio/ambient.mp3" }
+    {
+      "title": "Throughout the Flow of Years",
+      "src": "/audio/ambient.mp3"
+    }
   ]
 }
