@@ -280,13 +280,81 @@ input, button, textarea { font-family: inherit; }
   .glow-a, .glow-b, .studio-bg .grain, .login-mark, .login-card, .view, .toast { animation: none !important; }
 }
 
-@media (max-width: 900px) {
-  .app { grid-template-columns: 1fr; }
-  .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 1rem; }
-  .sidebar .nav { flex-direction: row; }
-  .nav-item.is-active::before { display: none; }
-  .nav-back { border: none; padding-top: 0.5rem; margin: 0; }
-  .user { margin: 0 0 0 auto; padding: 0; border: none; }
+/* tablets: collapse the write grid early */
+@media (max-width: 1080px) {
   .view-write { grid-template-columns: 1fr; }
   .organize { position: static; }
+}
+
+/* ---------- phones: an app-like shell ---------- */
+@media (max-width: 760px) {
+  .app { display: block; }
+
+  /* slim top bar: brand · back-to-site · user.
+     No backdrop-filter here — it would become the containing block for the
+     fixed bottom tab bar and pin it to the wrong place. */
+  .sidebar {
+    position: sticky; top: 0; z-index: 20;
+    height: auto; flex-direction: row; align-items: center;
+    gap: 0.8rem; padding: 0.7rem 1rem;
+    padding-top: calc(0.7rem + env(safe-area-inset-top, 0px));
+    border-right: none; border-bottom: 1px solid var(--line);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+    background: rgba(10, 10, 17, 0.94);
+  }
+  .brand { margin: 0; flex: 1; min-width: 0; }
+  .brand-mark { width: 32px; height: 32px; border-radius: 9px; font-size: 0.8rem; }
+  .brand-name { font-size: 1rem; gap: 0.2rem; }
+  .nav-back { margin: 0; padding: 0.5rem; border: none; font-size: 0.95rem; }
+  .user { margin: 0; padding: 0; border: none; gap: 0.5rem; }
+  .user-meta { display: none; }
+  .user-avatar { width: 32px; height: 32px; }
+  .user-logout { padding: 0.5rem; }
+
+  /* bottom tab bar for the views — thumb territory */
+  .sidebar .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    flex-direction: row; gap: 0;
+    background: rgba(12, 12, 20, 0.82);
+    -webkit-backdrop-filter: var(--glass); backdrop-filter: var(--glass);
+    border-top: 1px solid var(--line);
+    padding: 0.4rem 0.6rem;
+    padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
+  }
+  .nav-item {
+    flex: 1; flex-direction: column; justify-content: center; gap: 0.25rem;
+    min-height: 52px; padding: 0.35rem 0.25rem;
+    font-size: 0.68rem; letter-spacing: 0.06em; text-align: center;
+    border-radius: 12px;
+  }
+  .nav-ico { width: auto; font-size: 1.05rem; }
+  .nav-item.is-active::before { display: none; }
+  .nav-item.is-active { background: rgba(157, 176, 216, 0.14); }
+
+  /* stage + room for the tab bar */
+  .topbar { top: calc(48px + env(safe-area-inset-top, 0px)); padding: 0.8rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+  .view { padding: 1rem; padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)); }
+  .card { padding: 1.15rem; border-radius: 14px; }
+
+  /* comfortable touch targets; ≥16px inputs so iOS doesn't zoom-jump */
+  .btn { min-height: 44px; }
+  .btn-link, .pr-del, .user-logout { min-height: 0; }
+  .input-title { font-size: 1.7rem; }
+  .input-sub, .field input[type="date"], .field input[type="text"],
+  .field input:not([type]), .track-title { font-size: 16px; }
+
+  .publish-card { position: static; }
+  .organize { gap: 1rem; }
+
+  /* lists: tighter, hide the filename on tracks */
+  .post-row { padding: 0.9rem 0.35rem; }
+  .track-src { display: none; }
+  .pr-del { padding: 0.65rem; }
+
+  /* login card fills small screens gracefully */
+  .login { padding: 1.25rem; }
+  .login-card { width: 100%; max-width: 400px; padding: 2.5rem 1.75rem 2.25rem; }
+
+  /* toast clears the tab bar */
+  .toast { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); width: max-content; max-width: calc(100vw - 2rem); }
 }
