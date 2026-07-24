@@ -254,6 +254,38 @@ input, button, textarea { font-family: inherit; }
 .track-title:focus { outline: none; border-color: var(--glow); box-shadow: 0 0 0 3px rgba(157, 176, 216, 0.15); }
 .track-src { font-size: 0.72rem; color: var(--ink-faint); max-width: 28%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* ---------- pages (block builder) ---------- */
+.pg-meta { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: flex-end; }
+.pg-slug { flex: 1; min-width: 220px; }
+.slug-row { display: flex; align-items: center; gap: 0.35rem; }
+.slug-row em { color: var(--ink-faint); font-style: normal; }
+.slug-row input { flex: 1; min-width: 0; }
+.check { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--ink-dim); font-size: 0.88rem; padding: 0.55rem 0; cursor: pointer; }
+.check input { width: 16px; height: 16px; accent-color: var(--glow); }
+.field-label { display: block; font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.7rem; }
+
+.block-card { margin-bottom: 1rem; padding: 1.2rem 1.35rem; }
+.block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; }
+.block-type { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
+.block-tools { display: flex; gap: 0.3rem; }
+.blk-btn {
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line);
+  background: transparent; color: var(--ink-faint); cursor: pointer;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.blk-btn:hover:not(:disabled) { color: var(--ink); border-color: var(--glow); }
+.blk-btn:disabled { opacity: 0.3; cursor: default; }
+.blk-del:hover { color: var(--danger) !important; border-color: var(--danger) !important; }
+.block-card .field textarea {
+  width: 100%; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 0.65rem 0.75rem; color: var(--ink);
+  font-size: 0.92rem; font-family: var(--sans); line-height: 1.6; resize: vertical;
+  transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+.block-card .field textarea:focus { outline: none; border-color: var(--glow); box-shadow: 0 0 0 3px rgba(157, 176, 216, 0.15); }
+.add-block-card { padding: 1.2rem 1.35rem; }
+.add-block-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
 /* ---------- toast ---------- */
 .toast {
   position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);

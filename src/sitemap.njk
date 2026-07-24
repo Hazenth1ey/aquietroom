@@ -12,4 +12,7 @@ eleventyExcludeFromCollections: true
 {%- for post in collections.posts | reverse %}
   <url><loc>https://vermilionhereafter.com{{ post.url }}</loc></url>
 {%- endfor %}
+{%- if sitepages %}{% for cp in sitepages %}
+  <url><loc>https://vermilionhereafter.com/{{ cp.slug }}/</loc></url>
+{%- endfor %}{% endif %}
 </urlset>

@@ -1,0 +1,40 @@
+---
+layout: base
+pagination:
+  data: sitepages
+  size: 1
+  alias: p
+permalink: "/{{ p.slug | slugify }}/"
+eleventyExcludeFromCollections: true
+eleventyComputed:
+  title: "{{ p.title }}"
+  description: "{{ p.description }}"
+  ogTitle: "{{ p.title }} — a quiet room"
+  nav: "{{ p.slug }}"
+---
+<main class="wrap">
+  {% for block in p.blocks %}
+    {% if block.type == "hero" %}
+      {% if block.eyebrow %}<p class="eyebrow" data-reveal="{{ loop.index0 }}">{{ block.eyebrow }}</p>{% endif %}
+      <h1 class="title" data-reveal="{{ loop.index0 }}" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">{{ block.heading }}</h1>
+      {% if block.lede %}<p class="lede" data-reveal="{{ loop.index0 + 1 }}" style="margin-top: 1.5rem;">{{ block.lede }}</p>{% endif %}
+    {% elif block.type == "prose" %}
+      <div class="prose" data-reveal="{{ loop.index0 }}" style="margin-top: 2rem;">{{ block.body | md | safe }}</div>
+    {% elif block.type == "image" %}
+      {% if block.src %}
+      <figure class="block-figure" data-reveal="{{ loop.index0 }}">
+        <img src="{{ block.src }}" alt="{{ block.caption or '' }}" loading="lazy" />
+        {% if block.caption %}<figcaption>{{ block.caption }}</figcaption>{% endif %}
+      </figure>
+      {% endif %}
+    {% elif block.type == "quote" %}
+      <div class="prose" data-reveal="{{ loop.index0 }}" style="margin-top: 2rem;">
+        <blockquote>{{ block.text }}{% if block.attribution %}<footer class="quote-attr">— {{ block.attribution }}</footer>{% endif %}</blockquote>
+      </div>
+    {% elif block.type == "divider" %}
+      <hr class="block-divider" data-reveal="{{ loop.index0 }}" />
+    {% endif %}
+  {% endfor %}
+
+  <a href="/home/" class="back">back to the room</a>
+</main>

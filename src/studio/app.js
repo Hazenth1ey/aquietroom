@@ -13,13 +13,17 @@
     postsDir: "src/journal/posts",
     uploadsDir: "src/uploads",
     soundtrackPath: "src/_data/soundtrack.json",
+    pagesPath: "src/_data/sitepages.json",
     authBase: "https://aquietroom-auth.ivankolly.workers.dev",
   };
   const TOKEN_KEY = "qr_studio_token";
+  // slugs the site already owns — a page can't take these addresses
+  const RESERVED_SLUGS = ["home", "journal", "projects", "about", "studio", "admin", "css", "js", "audio", "uploads", "feed.xml", "sitemap.xml", "404"];
 
   const state = {
     token: null, file: null, sha: null, cover: "", editor: null,
     sound: { sha: null, tracks: [] },
+    pages: { sha: null, list: [], editing: null, draft: null },
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -226,10 +230,15 @@
     $("#view-write").hidden = name !== "write";
     $("#view-list").hidden = name !== "list";
     $("#view-sound").hidden = name !== "sound";
+    $("#view-pages").hidden = name !== "pages";
     $("#crumb").textContent =
-      name === "list" ? "My content" : name === "sound" ? "Soundtrack" : "Write";
+      name === "list" ? "My content"
+      : name === "sound" ? "Soundtrack"
+      : name === "pages" ? "Pages"
+      : "Write";
     if (name === "list") renderList();
     if (name === "sound") loadSoundtrack();
+    if (name === "pages") { showPagesList(); loadPages(); }
   }
 
   /* ---------------- soundtrack ---------------- */
@@ -325,6 +334,245 @@
       toast(e.message, true);
     } finally {
       $("#track-save").disabled = false;
+    }
+  }
+
+  /* ---------------- pages (block builder) ---------------- */
+  const BLOCK_LABELS = { hero: "Hero", prose: "Prose", image: "Image", quote: "Quote", divider: "Divider" };
+
+  function showPagesList() {
+    $("#pages-list-card").hidden = false;
+    $("#page-editor").hidden = true;
+    state.pages.editing = null;
+    state.pages.draft = null;
+  }
+
+  async function loadPages() {
+    const box = $("#pages-list");
+    box.innerHTML = '<p class="muted">Loading…</p>';
+    try {
+      const sha = await shaOf(CONFIG.pagesPath);
+      if (sha) {
+        const { raw } = await getFile(CONFIG.pagesPath);
+        state.pages.sha = sha;
+        const data = JSON.parse(raw || "[]");
+        state.pages.list = Array.isArray(data) ? data : [];
+      } else {
+        state.pages.sha = null;
+        state.pages.list = [];
+      }
+      renderPagesList();
+    } catch (e) {
+      box.innerHTML = `<p class="muted">${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  function renderPagesList() {
+    const box = $("#pages-list");
+    if (!state.pages.list.length) {
+      box.innerHTML = '<p class="muted">No pages yet. Create one and it appears on the site at its own address.</p>';
+      return;
+    }
+    box.innerHTML = "";
+    state.pages.list.forEach((pg, i) => {
+      const row = document.createElement("div");
+      row.className = "post-row";
+      row.innerHTML =
+        `<div class="pr-main"><h4>${escapeHtml(pg.title || "Untitled")}` +
+        (pg.nav ? '<span class="badge">in navigation</span>' : "") +
+        `</h4><div class="pr-meta">/${escapeHtml(pg.slug || "")}/ · ${(pg.blocks || []).length} block${(pg.blocks || []).length === 1 ? "" : "s"}</div></div>` +
+        `<button class="pr-del" title="Delete">✕</button>`;
+      row.querySelector(".pr-main").addEventListener("click", () => openPageEditor(i));
+      row.querySelector(".pr-del").addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        if (!confirm(`Delete the page “${pg.title}”? Its address /${pg.slug}/ will stop working.`)) return;
+        state.pages.list.splice(i, 1);
+        await savePagesFile(`Delete page: ${pg.title}`);
+        renderPagesList();
+      });
+      box.appendChild(row);
+    });
+  }
+
+  function openPageEditor(index) {
+    state.pages.editing = index;
+    state.pages.draft =
+      index == null
+        ? { title: "", slug: "", description: "", nav: false, blocks: [{ type: "hero", eyebrow: "", heading: "", lede: "" }] }
+        : JSON.parse(JSON.stringify(state.pages.list[index]));
+    $("#pages-list-card").hidden = true;
+    $("#page-editor").hidden = false;
+    $("#pg-title").value = state.pages.draft.title || "";
+    $("#pg-slug").value = state.pages.draft.slug || "";
+    if (index == null) delete $("#pg-slug").dataset.touched;
+    else $("#pg-slug").dataset.touched = "1";
+    $("#pg-desc").value = state.pages.draft.description || "";
+    $("#pg-nav").checked = !!state.pages.draft.nav;
+    $("#pg-delete").hidden = index == null;
+    renderBlocks();
+    if (index == null) $("#pg-title").focus();
+  }
+
+  function blockField(labelText, value, oninput, textarea) {
+    const wrap = document.createElement("label");
+    wrap.className = "field";
+    const span = document.createElement("span");
+    span.textContent = labelText;
+    const input = document.createElement(textarea ? "textarea" : "input");
+    input.value = value || "";
+    if (textarea) input.rows = 6;
+    input.addEventListener("input", (e) => oninput(e.target.value));
+    wrap.appendChild(span);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function renderBlocks() {
+    const box = $("#pg-blocks");
+    box.innerHTML = "";
+    const blocks = state.pages.draft.blocks;
+    blocks.forEach((b, i) => {
+      const card = document.createElement("div");
+      card.className = "card block-card";
+      const head = document.createElement("div");
+      head.className = "block-head";
+      head.innerHTML =
+        `<span class="block-type">${BLOCK_LABELS[b.type] || b.type}</span>` +
+        `<span class="block-tools">` +
+        `<button class="blk-btn" data-act="up" title="Move up" ${i === 0 ? "disabled" : ""}>↑</button>` +
+        `<button class="blk-btn" data-act="down" title="Move down" ${i === blocks.length - 1 ? "disabled" : ""}>↓</button>` +
+        `<button class="blk-btn blk-del" data-act="del" title="Remove">✕</button>` +
+        `</span>`;
+      head.querySelectorAll(".blk-btn").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          const act = btn.dataset.act;
+          if (act === "del") blocks.splice(i, 1);
+          if (act === "up" && i > 0) blocks.splice(i - 1, 0, blocks.splice(i, 1)[0]);
+          if (act === "down" && i < blocks.length - 1) blocks.splice(i + 1, 0, blocks.splice(i, 1)[0]);
+          renderBlocks();
+        })
+      );
+      card.appendChild(head);
+
+      if (b.type === "hero") {
+        card.appendChild(blockField("Eyebrow (small label, optional)", b.eyebrow, (v) => (b.eyebrow = v)));
+        card.appendChild(blockField("Heading", b.heading, (v) => (b.heading = v)));
+        card.appendChild(blockField("Lede (optional)", b.lede, (v) => (b.lede = v)));
+      } else if (b.type === "prose") {
+        card.appendChild(blockField("Text (Markdown)", b.body, (v) => (b.body = v), true));
+      } else if (b.type === "image") {
+        const preview = document.createElement("img");
+        preview.className = "cover-preview";
+        preview.hidden = !b.src;
+        if (b.src) preview.src = b.src;
+        card.appendChild(preview);
+        const pick = document.createElement("button");
+        pick.className = "btn btn-soft";
+        pick.textContent = b.src ? "Replace image" : "Choose image";
+        const file = document.createElement("input");
+        file.type = "file";
+        file.accept = "image/*";
+        file.hidden = true;
+        pick.addEventListener("click", () => file.click());
+        file.addEventListener("change", async (e) => {
+          if (!e.target.files || !e.target.files[0]) return;
+          const url = await uploadAsset(e.target.files[0], "image");
+          if (url) { b.src = url; renderBlocks(); }
+          e.target.value = "";
+        });
+        card.appendChild(pick);
+        card.appendChild(file);
+        card.appendChild(blockField("Caption (optional)", b.caption, (v) => (b.caption = v)));
+      } else if (b.type === "quote") {
+        card.appendChild(blockField("Quote", b.text, (v) => (b.text = v), true));
+        card.appendChild(blockField("Attribution (optional)", b.attribution, (v) => (b.attribution = v)));
+      }
+      // divider: no fields
+
+      box.appendChild(card);
+    });
+    if (!blocks.length) box.innerHTML = '<p class="muted" style="padding: 0 0.3rem;">No blocks yet — add one below.</p>';
+  }
+
+  // Generic upload (shared by cover + image blocks): returns /uploads/… url.
+  async function uploadAsset(file, kind) {
+    try {
+      setStatus("Uploading…");
+      const ext = (file.name.split(".").pop() || "bin").toLowerCase();
+      const base = slugify(file.name.replace(/\.[^.]+$/, ""));
+      const name = `${Date.now()}-${base}.${ext}`;
+      const path = `${CONFIG.uploadsDir}/${name}`;
+      const b64 = await fileToB64(file);
+      const res = await gh(`/repos/${CONFIG.repo}/contents/${path}`, {
+        method: "PUT",
+        body: JSON.stringify({ message: `Upload ${kind} ${name}`, content: b64, branch: CONFIG.branch }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Upload failed.");
+      }
+      setStatus("Uploaded", "ok");
+      return `/uploads/${name}`;
+    } catch (e) {
+      setStatus("");
+      toast(e.message, true);
+      return null;
+    }
+  }
+
+  async function savePagesFile(message) {
+    const content = JSON.stringify(state.pages.list, null, 2) + "\n";
+    const res = await putFile(CONFIG.pagesPath, content, message, state.pages.sha);
+    state.pages.sha = res.content && res.content.sha;
+  }
+
+  async function savePage() {
+    const d = state.pages.draft;
+    d.title = $("#pg-title").value.trim();
+    d.slug = slugify($("#pg-slug").value.trim() || d.title);
+    d.description = $("#pg-desc").value.trim();
+    d.nav = $("#pg-nav").checked;
+    if (!d.title) { toast("Give the page a title.", true); $("#pg-title").focus(); return; }
+    if (!d.slug) { toast("The page needs an address.", true); $("#pg-slug").focus(); return; }
+    if (RESERVED_SLUGS.indexOf(d.slug) !== -1) {
+      toast(`“/${d.slug}/” is reserved by the site — pick another address.`, true);
+      $("#pg-slug").focus();
+      return;
+    }
+    const clash = state.pages.list.findIndex((p, i) => p.slug === d.slug && i !== state.pages.editing);
+    if (clash !== -1) { toast(`Another page already lives at /${d.slug}/.`, true); return; }
+
+    try {
+      setStatus("Publishing…");
+      $("#pg-save").disabled = true;
+      if (state.pages.editing == null) state.pages.list.push(d);
+      else state.pages.list[state.pages.editing] = d;
+      await savePagesFile(`${state.pages.editing == null ? "Create" : "Update"} page: ${d.title}`);
+      state.pages.editing = state.pages.list.indexOf(d);
+      $("#pg-slug").value = d.slug;
+      $("#pg-delete").hidden = false;
+      setStatus("Published", "ok");
+      toast(`Page published — live at /${d.slug}/ in about a minute.`);
+    } catch (e) {
+      setStatus("Save failed", "err");
+      toast(e.message, true);
+    } finally {
+      $("#pg-save").disabled = false;
+    }
+  }
+
+  async function deletePage() {
+    if (state.pages.editing == null) return;
+    const pg = state.pages.list[state.pages.editing];
+    if (!confirm(`Delete the page “${pg.title}”? Its address /${pg.slug}/ will stop working.`)) return;
+    try {
+      state.pages.list.splice(state.pages.editing, 1);
+      await savePagesFile(`Delete page: ${pg.title}`);
+      toast("Page deleted.");
+      showPagesList();
+      renderPagesList();
+    } catch (e) {
+      toast(e.message, true);
     }
   }
 
@@ -604,6 +852,31 @@
       e.target.value = "";
     });
     $("#track-save").addEventListener("click", saveSoundtrack);
+
+    // pages
+    $("#page-new").addEventListener("click", () => openPageEditor(null));
+    $("#pg-back").addEventListener("click", () => { showPagesList(); renderPagesList(); });
+    $("#pg-save").addEventListener("click", savePage);
+    $("#pg-delete").addEventListener("click", deletePage);
+    $("#pg-title").addEventListener("input", (e) => {
+      // auto-suggest the address until the user edits it by hand
+      const slugEl = $("#pg-slug");
+      if (!slugEl.dataset.touched) slugEl.value = slugify(e.target.value);
+    });
+    $("#pg-slug").addEventListener("input", (e) => { e.target.dataset.touched = "1"; });
+    document.querySelectorAll("[data-add-block]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const type = b.dataset.addBlock;
+        const fresh =
+          type === "hero" ? { type: "hero", eyebrow: "", heading: "", lede: "" }
+          : type === "prose" ? { type: "prose", body: "" }
+          : type === "image" ? { type: "image", src: "", caption: "" }
+          : type === "quote" ? { type: "quote", text: "", attribution: "" }
+          : { type: "divider" };
+        state.pages.draft.blocks.push(fresh);
+        renderBlocks();
+      })
+    );
   }
 
   document.addEventListener("DOMContentLoaded", () => {
