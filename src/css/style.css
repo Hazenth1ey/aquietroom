@@ -131,7 +131,14 @@ body {
   transition: opacity 1.2s var(--ease);
   will-change: transform;
 }
-.cursor-glow.is-awake { opacity: 1; }
+body.is-portal .cursor-glow.is-awake { opacity: 1; }
+
+/* In-place navigation cross-fade (client-side router) */
+#swup { transition: opacity 0.34s var(--ease); }
+html.is-navigating #swup { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  #swup { transition: none; }
+}
 
 /* A slow radial breath of light behind content */
 body::before {
