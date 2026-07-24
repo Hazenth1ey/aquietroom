@@ -52,7 +52,9 @@
   <button id="sound-toggle" class="skiper-toggle" aria-pressed="false" aria-label="Toggle ambient sound" title="Ambient sound">
     <span class="sk-reveal" aria-hidden="true">
       <span class="sk-title-wrap">
-        <span class="sk-title" id="sk-title">{{ soundtrack.tracks[0].title if soundtrack.tracks and soundtrack.tracks.length else "ambient" }}</span>
+        <span class="sk-ticker" id="sk-ticker">
+          <span class="sk-title" id="sk-title">{{ soundtrack.tracks[0].title if soundtrack.tracks and soundtrack.tracks.length else "ambient" }}</span>
+        </span>
       </span>
     </span>
     <span class="sk-knob" aria-hidden="true">
