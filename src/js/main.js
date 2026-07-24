@@ -83,8 +83,8 @@
         x: Math.random() * w,
         y: scatterY ? Math.random() * h : h + 6,
         depth: depth,
-        r: (0.35 + depth * 1.5) * dpr,
-        baseA: 0.28 + Math.random() * 0.6,
+        r: (0.35 + depth * 1.4) * dpr,
+        baseA: 0.16 + Math.random() * 0.4,
         tw: Math.random() * Math.PI * 2,
         twSpeed: 0.004 + Math.random() * 0.012,
         vy: -(0.015 + depth * 0.06) * dpr, // slow upward drift, nearer faster
@@ -115,13 +115,13 @@
         const x = s.x + ox;
         const y = s.y + oy;
 
-        // soft halo for the brightest near stars
-        if (s.depth > 0.82) {
-          const halo = ctx.createRadialGradient(x, y, 0, x, y, r * 6);
-          halo.addColorStop(0, "rgba(" + s.tint + "," + (a * 0.5).toFixed(3) + ")");
+        // faint halo, only on the very nearest stars
+        if (s.depth > 0.92) {
+          const halo = ctx.createRadialGradient(x, y, 0, x, y, r * 4);
+          halo.addColorStop(0, "rgba(" + s.tint + "," + (a * 0.22).toFixed(3) + ")");
           halo.addColorStop(1, "rgba(" + s.tint + ",0)");
           ctx.beginPath();
-          ctx.arc(x, y, r * 6, 0, Math.PI * 2);
+          ctx.arc(x, y, r * 4, 0, Math.PI * 2);
           ctx.fillStyle = halo;
           ctx.fill();
         }

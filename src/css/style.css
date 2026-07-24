@@ -27,7 +27,7 @@ html { scroll-behavior: smooth; }
 body {
   /* radial "glow at the bottom" horizon, à la the stars background */
   background:
-    radial-gradient(ellipse 100% 66% at 50% 100%, #15141d 0%, #0b0b12 46%, var(--bg) 100%)
+    radial-gradient(ellipse 100% 60% at 50% 100%, #100f17 0%, #0a0a10 42%, var(--bg) 100%)
       fixed,
     var(--bg);
   color: var(--ink);
@@ -47,7 +47,7 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.9;
+  opacity: 0.62;
 }
 
 /* ---------------------------------------------------------
