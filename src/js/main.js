@@ -39,7 +39,7 @@
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    let w, h, dpr, motes;
+    let w, h, dpr, stars;
 
     // Pointer parallax — the field drifts gently as you move.
     const par = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -63,20 +63,31 @@
     }
 
     function seed() {
-      const count = Math.round((innerWidth * innerHeight) / 26000);
-      motes = Array.from({ length: count }, () => spawn());
+      const count = Math.min(
+        460,
+        Math.round((innerWidth * innerHeight) / 4200)
+      );
+      stars = Array.from({ length: count }, () => spawn(true));
     }
 
-    function spawn() {
-      const tint = Math.random() > 0.5 ? "157,176,216" : "201,169,200";
+    // depth 0 = far/small/dim, 1 = near/big/bright
+    function spawn(scatterY) {
+      const depth = Math.random();
+      const white = Math.random() > 0.24;
+      const tint = white
+        ? "255,255,255"
+        : Math.random() > 0.5
+        ? "175,192,230"
+        : "206,178,206";
       return {
         x: Math.random() * w,
-        y: Math.random() * h,
-        r: (Math.random() * 1.4 + 0.3) * dpr,
-        vx: (Math.random() - 0.5) * 0.12 * dpr,
-        vy: (Math.random() - 0.5) * 0.12 * dpr,
-        a: Math.random() * 0.4 + 0.1,
-        tw: Math.random() * Math.PI * 2, // twinkle phase
+        y: scatterY ? Math.random() * h : h + 6,
+        depth: depth,
+        r: (0.35 + depth * 1.5) * dpr,
+        baseA: 0.28 + Math.random() * 0.6,
+        tw: Math.random() * Math.PI * 2,
+        twSpeed: 0.004 + Math.random() * 0.012,
+        vy: -(0.015 + depth * 0.06) * dpr, // slow upward drift, nearer faster
         tint: tint,
       };
     }
@@ -85,27 +96,39 @@
       ctx.clearRect(0, 0, w, h);
       par.x += (par.tx - par.x) * 0.05;
       par.y += (par.ty - par.y) * 0.05;
-      for (const m of motes) {
-        m.x += m.vx;
-        m.y += m.vy;
-        m.tw += 0.008 * (1 + audioLevel * 1.4);
 
-        if (m.x < -5) m.x = w + 5;
-        if (m.x > w + 5) m.x = -5;
-        if (m.y < -5) m.y = h + 5;
-        if (m.y > h + 5) m.y = -5;
+      for (const s of stars) {
+        s.y += s.vy;
+        s.tw += s.twSpeed * (1 + audioLevel * 1.2);
+        if (s.y < -6) {
+          s.y = h + 6;
+          s.x = Math.random() * w;
+        }
 
-        // deeper (larger) motes parallax more
-        const ox = par.x * m.r * 5;
-        const oy = par.y * m.r * 5;
-        // dust breathes with the music
-        const twSpeedApplied = m.tw; // (twinkle already advanced above)
-        let alpha = m.a * (0.55 + 0.45 * Math.sin(twSpeedApplied)) * (1 + audioLevel * 0.9);
-        if (alpha > 1) alpha = 1;
-        const r = m.r * (1 + audioLevel * 0.6);
+        // nearer stars parallax more
+        const ox = par.x * s.depth * 18 * dpr;
+        const oy = par.y * s.depth * 18 * dpr;
+        const twinkle = 0.5 + 0.5 * Math.sin(s.tw);
+        let a = s.baseA * (0.32 + 0.68 * twinkle) * (1 + audioLevel * 0.75);
+        if (a > 1) a = 1;
+        const r = s.r * (1 + audioLevel * 0.5);
+        const x = s.x + ox;
+        const y = s.y + oy;
+
+        // soft halo for the brightest near stars
+        if (s.depth > 0.82) {
+          const halo = ctx.createRadialGradient(x, y, 0, x, y, r * 6);
+          halo.addColorStop(0, "rgba(" + s.tint + "," + (a * 0.5).toFixed(3) + ")");
+          halo.addColorStop(1, "rgba(" + s.tint + ",0)");
+          ctx.beginPath();
+          ctx.arc(x, y, r * 6, 0, Math.PI * 2);
+          ctx.fillStyle = halo;
+          ctx.fill();
+        }
+
         ctx.beginPath();
-        ctx.arc(m.x + ox, m.y + oy, r, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + m.tint + "," + alpha.toFixed(3) + ")";
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(" + s.tint + "," + a.toFixed(3) + ")";
         ctx.fill();
       }
       requestAnimationFrame(frame);
