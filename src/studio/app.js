@@ -14,6 +14,8 @@
     uploadsDir: "src/uploads",
     soundtrackPath: "src/_data/soundtrack.json",
     pagesPath: "src/_data/sitepages.json",
+    aboutPath: "src/_data/about.json",
+    projectsPath: "src/_data/projects.json",
     authBase: "https://aquietroom-auth.ivankolly.workers.dev",
   };
   const TOKEN_KEY = "qr_studio_token";
@@ -343,6 +345,7 @@
   function showPagesList() {
     $("#pages-list-card").hidden = false;
     $("#page-editor").hidden = true;
+    $("#core-editor").hidden = true;
     state.pages.editing = null;
     state.pages.draft = null;
   }
@@ -369,11 +372,35 @@
 
   function renderPagesList() {
     const box = $("#pages-list");
+    box.innerHTML = "";
+
+    // Core pages — always present, editable, never deletable.
+    const CORE = [
+      { key: "journal", title: "Journal", meta: "/journal/ · entries live in My content" },
+      { key: "projects", title: "Projects", meta: "/projects/ · intro + project cards" },
+      { key: "about", title: "About", meta: "/about/ · who keeps this room" },
+    ];
+    CORE.forEach((c) => {
+      const row = document.createElement("div");
+      row.className = "post-row";
+      row.innerHTML =
+        `<div class="pr-main"><h4>${c.title}<span class="badge">core</span></h4>` +
+        `<div class="pr-meta">${c.meta}</div></div>`;
+      row.querySelector(".pr-main").addEventListener("click", () => {
+        if (c.key === "journal") switchView("list");
+        else openCore(c.key);
+      });
+      box.appendChild(row);
+    });
+
     if (!state.pages.list.length) {
-      box.innerHTML = '<p class="muted">No pages yet. Create one and it appears on the site at its own address.</p>';
+      const p = document.createElement("p");
+      p.className = "muted";
+      p.style.padding = "1rem 0.4rem 0";
+      p.textContent = "No custom pages yet. Create one and it appears on the site at its own address.";
+      box.appendChild(p);
       return;
     }
-    box.innerHTML = "";
     state.pages.list.forEach((pg, i) => {
       const row = document.createElement("div");
       row.className = "post-row";
@@ -401,6 +428,7 @@
         ? { title: "", slug: "", description: "", nav: false, blocks: [{ type: "hero", eyebrow: "", heading: "", lede: "" }] }
         : JSON.parse(JSON.stringify(state.pages.list[index]));
     $("#pages-list-card").hidden = true;
+    $("#core-editor").hidden = true;
     $("#page-editor").hidden = false;
     $("#pg-title").value = state.pages.draft.title || "";
     $("#pg-slug").value = state.pages.draft.slug || "";
@@ -492,6 +520,196 @@
       box.appendChild(card);
     });
     if (!blocks.length) box.innerHTML = '<p class="muted" style="padding: 0 0.3rem;">No blocks yet — add one below.</p>';
+  }
+
+  /* ---- core page editors (About / Projects) ---- */
+  const ICONS = ["email", "github", "twitter", "instagram", "linkedin", "facebook", "rss", "link"];
+  const core = { kind: null, sha: null, data: null };
+
+  async function openCore(kind) {
+    const box = $("#core-editor");
+    $("#pages-list-card").hidden = true;
+    $("#page-editor").hidden = true;
+    box.hidden = false;
+    box.innerHTML = '<div class="card"><p class="muted">Loading…</p></div>';
+    const path = kind === "about" ? CONFIG.aboutPath : CONFIG.projectsPath;
+    try {
+      const sha = await shaOf(path);
+      const { raw } = await getFile(path);
+      core.kind = kind;
+      core.sha = sha;
+      core.data = JSON.parse(raw || "{}");
+      if (kind === "about") renderCoreAbout();
+      else renderCoreProjects();
+    } catch (e) {
+      box.innerHTML = `<div class="card"><p class="muted">${escapeHtml(e.message)}</p></div>`;
+    }
+  }
+
+  function coreShell(title, bodyEl) {
+    const box = $("#core-editor");
+    box.innerHTML = "";
+    const card = document.createElement("div");
+    card.className = "card";
+    const head = document.createElement("div");
+    head.className = "list-head";
+    head.innerHTML = `<h3 class="panel-title">${title}<span class="badge">core</span></h3>`;
+    card.appendChild(head);
+    card.appendChild(bodyEl);
+    box.appendChild(card);
+
+    const actions = document.createElement("div");
+    actions.className = "card publish-card";
+    actions.style.marginTop = "1.3rem";
+    const save = document.createElement("button");
+    save.className = "btn btn-primary btn-block";
+    save.id = "core-save";
+    save.textContent = "Publish changes";
+    save.addEventListener("click", saveCore);
+    const back = document.createElement("button");
+    back.className = "btn btn-soft btn-block";
+    back.textContent = "← All pages";
+    back.addEventListener("click", () => { showPagesList(); renderPagesList(); });
+    actions.appendChild(save);
+    actions.appendChild(back);
+    box.appendChild(actions);
+  }
+
+  function renderCoreAbout() {
+    const d = core.data;
+    d.links = Array.isArray(d.links) ? d.links : [];
+    const body = document.createElement("div");
+    body.appendChild(blockField("Eyebrow (small label)", d.eyebrow, (v) => (d.eyebrow = v)));
+    body.appendChild(blockField("Heading", d.heading, (v) => (d.heading = v)));
+    body.appendChild(blockField("Lede (opening line)", d.lede, (v) => (d.lede = v), true));
+    body.appendChild(blockField("Body (Markdown)", d.body, (v) => (d.body = v), true));
+    body.appendChild(blockField("Links heading (optional)", d.links_heading, (v) => (d.links_heading = v)));
+    body.appendChild(blockField("Links intro (optional)", d.links_intro, (v) => (d.links_intro = v)));
+
+    const label = document.createElement("span");
+    label.className = "field-label";
+    label.textContent = "Links";
+    body.appendChild(label);
+    const linksBox = document.createElement("div");
+    body.appendChild(linksBox);
+
+    function renderLinks() {
+      linksBox.innerHTML = "";
+      d.links.forEach((l, i) => {
+        const row = document.createElement("div");
+        row.className = "track-row";
+        const lab = document.createElement("input");
+        lab.className = "track-title";
+        lab.placeholder = "label";
+        lab.value = l.label || "";
+        lab.addEventListener("input", (e) => (l.label = e.target.value));
+        const url = document.createElement("input");
+        url.className = "track-title";
+        url.placeholder = "https://… or mailto:…";
+        url.value = l.url || "";
+        url.addEventListener("input", (e) => (l.url = e.target.value));
+        const icon = document.createElement("select");
+        icon.className = "core-select";
+        ICONS.forEach((ic) => {
+          const o = document.createElement("option");
+          o.value = ic;
+          o.textContent = ic;
+          if ((l.icon || "link") === ic) o.selected = true;
+          icon.appendChild(o);
+        });
+        icon.addEventListener("change", (e) => (l.icon = e.target.value));
+        const del = document.createElement("button");
+        del.className = "pr-del";
+        del.title = "Remove";
+        del.textContent = "✕";
+        del.addEventListener("click", () => { d.links.splice(i, 1); renderLinks(); });
+        row.appendChild(lab);
+        row.appendChild(url);
+        row.appendChild(icon);
+        row.appendChild(del);
+        linksBox.appendChild(row);
+      });
+      const add = document.createElement("button");
+      add.className = "btn btn-soft";
+      add.style.marginTop = "0.8rem";
+      add.textContent = "＋ Add link";
+      add.addEventListener("click", () => { d.links.push({ label: "", url: "", icon: "link" }); renderLinks(); });
+      linksBox.appendChild(add);
+    }
+    renderLinks();
+    coreShell("About page", body);
+  }
+
+  function renderCoreProjects() {
+    const d = core.data;
+    d.items = Array.isArray(d.items) ? d.items : [];
+    const body = document.createElement("div");
+    body.appendChild(blockField("Intro (the italic line under the heading)", d.intro, (v) => (d.intro = v), true));
+
+    const label = document.createElement("span");
+    label.className = "field-label";
+    label.textContent = "Projects";
+    body.appendChild(label);
+    const itemsBox = document.createElement("div");
+    body.appendChild(itemsBox);
+
+    function renderItems() {
+      itemsBox.innerHTML = "";
+      d.items.forEach((it, i) => {
+        const card = document.createElement("div");
+        card.className = "card block-card";
+        const head = document.createElement("div");
+        head.className = "block-head";
+        head.innerHTML =
+          `<span class="block-type">${escapeHtml(it.title || "Project")}</span>` +
+          `<span class="block-tools">` +
+          `<button class="blk-btn" data-act="up" ${i === 0 ? "disabled" : ""}>↑</button>` +
+          `<button class="blk-btn" data-act="down" ${i === d.items.length - 1 ? "disabled" : ""}>↓</button>` +
+          `<button class="blk-btn blk-del" data-act="del">✕</button></span>`;
+        head.querySelectorAll(".blk-btn").forEach((btn) =>
+          btn.addEventListener("click", () => {
+            const act = btn.dataset.act;
+            if (act === "del") { if (confirm("Remove this project card?")) d.items.splice(i, 1); }
+            if (act === "up" && i > 0) d.items.splice(i - 1, 0, d.items.splice(i, 1)[0]);
+            if (act === "down" && i < d.items.length - 1) d.items.splice(i + 1, 0, d.items.splice(i, 1)[0]);
+            renderItems();
+          })
+        );
+        card.appendChild(head);
+        card.appendChild(blockField("Title", it.title, (v) => (it.title = v)));
+        card.appendChild(blockField("Year (optional)", it.year, (v) => (it.year = v)));
+        card.appendChild(blockField("Description", it.description, (v) => (it.description = v), true));
+        card.appendChild(blockField("Tags (comma separated)", (it.tags || []).join(", "), (v) => (it.tags = v.split(",").map((t) => t.trim()).filter(Boolean))));
+        card.appendChild(blockField("Link (optional)", it.url, (v) => (it.url = v)));
+        itemsBox.appendChild(card);
+      });
+      const add = document.createElement("button");
+      add.className = "btn btn-soft";
+      add.textContent = "＋ Add project";
+      add.addEventListener("click", () => { d.items.push({ title: "", year: "", description: "", tags: [], url: "" }); renderItems(); });
+      itemsBox.appendChild(add);
+    }
+    renderItems();
+    coreShell("Projects page", body);
+  }
+
+  async function saveCore() {
+    const path = core.kind === "about" ? CONFIG.aboutPath : CONFIG.projectsPath;
+    const label = core.kind === "about" ? "About" : "Projects";
+    try {
+      setStatus("Publishing…");
+      $("#core-save").disabled = true;
+      const res = await putFile(path, JSON.stringify(core.data, null, 2) + "\n", `Update ${label} page`, core.sha);
+      core.sha = res.content && res.content.sha;
+      setStatus("Published", "ok");
+      toast(`${label} page updated — live in about a minute.`);
+    } catch (e) {
+      setStatus("Save failed", "err");
+      toast(e.message, true);
+    } finally {
+      const b = $("#core-save");
+      if (b) b.disabled = false;
+    }
   }
 
   // Generic upload (shared by cover + image blocks): returns /uploads/… url.
