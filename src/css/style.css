@@ -116,12 +116,8 @@ body {
 .sk-reveal { display: flex; align-items: center; gap: 8px; flex: none; opacity: 0; transform: translateX(10px); transition: opacity 0.3s var(--ease), transform 0.45s var(--ease); }
 .skiper-toggle[aria-pressed="true"] .sk-reveal { opacity: 1; transform: none; transition-delay: 0.2s; }
 .sk-bar { width: 56px; height: 8px; border-radius: 999px; background: rgba(231, 228, 238, 0.22); flex: none; }
-.sk-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(231, 228, 238, 0.22); flex: none; }
-.skiper-toggle[aria-pressed="true"] .sk-dot { animation: sk-pulse 2.4s ease-in-out infinite; }
-.skiper-toggle[aria-pressed="true"] .sk-dot:nth-child(3) { animation-delay: 0.3s; }
-.skiper-toggle[aria-pressed="true"] .sk-dot:nth-child(4) { animation-delay: 0.6s; }
-.skiper-toggle[aria-pressed="true"] .sk-dot:nth-child(5) { animation-delay: 0.9s; }
-@keyframes sk-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+/* dots are driven by JS from the live audio level (see meter() in main.js) */
+.sk-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(231, 228, 238, 0.35); flex: none; opacity: 0.4; will-change: opacity, transform; }
 
 /* the knob: play glyph when off, equalizer bars when playing */
 .sk-knob { flex: none; width: 40px; height: 40px; border-radius: 50%; background: rgba(157, 176, 216, 0.12); display: grid; place-items: center; color: var(--ink-faint); transition: color 0.4s var(--ease), background 0.4s var(--ease); }
@@ -140,7 +136,7 @@ body {
   .grain { animation: none; }
   .skiper-toggle { transition: none; }
   .skiper-toggle[aria-pressed="true"] .sk-eq i,
-  .skiper-toggle[aria-pressed="true"] .sk-dot { animation: none; height: 9px; }
+  .skiper-toggle[aria-pressed="true"] .sk-dot { opacity: 0.8 !important; transform: none !important; }
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none; }
 }

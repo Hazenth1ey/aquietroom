@@ -222,9 +222,15 @@
       meter();
     }
 
-    // Continuously translate the track's loudness into audioLevel (0..1).
+    // Continuously translate the track's loudness into audioLevel (0..1),
+    // and let it ripple across the toggle's dots — each dot reads the level
+    // a little further in the past, so loudness travels along the row.
     function meter() {
       const data = new Uint8Array(analyser.fftSize);
+      const dots = document.querySelectorAll(".skiper-toggle .sk-dot");
+      const HISTORY = 48; // ~0.8s at 60fps
+      const history = new Float32Array(HISTORY);
+      let head = 0;
       (function tick() {
         let target = 0;
         if (playing) {
@@ -237,6 +243,23 @@
           target = Math.min(1, Math.sqrt(sum / data.length) * 3.2);
         }
         audioLevel += (target - audioLevel) * 0.12;
+
+        history[head] = audioLevel;
+        head = (head + 1) % HISTORY;
+
+        if (dots.length && !reduceMotion) {
+          for (let i = 0; i < dots.length; i++) {
+            // dot 0 hears "now"; each next dot hears ~0.2s earlier
+            const back = i * 12;
+            const lvl = playing
+              ? history[(head - 1 - back + HISTORY * 2) % HISTORY]
+              : 0;
+            const o = playing ? 0.3 + lvl * 1.6 : 0.4;
+            const s = playing ? 1 + lvl * 0.9 : 1;
+            dots[i].style.opacity = (o > 1 ? 1 : o).toFixed(3);
+            dots[i].style.transform = "scale(" + s.toFixed(3) + ")";
+          }
+        }
         requestAnimationFrame(tick);
       })();
     }
