@@ -131,19 +131,21 @@ body {
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
 }
+.sk-ticker { display: inline-flex; white-space: nowrap; will-change: transform; }
+.sk-ticker.is-scrolling { animation: sk-ticker var(--sk-dur, 10s) linear infinite; }
 .sk-title {
   display: inline-block;
-  padding: 0 8px;
+  padding: 0 18px 0 8px; /* right padding = the gap between loop copies */
   font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: lowercase;
   color: var(--ink-dim);
   white-space: nowrap;
 }
-.sk-title.is-scrolling { animation: sk-drift var(--sk-dur, 9s) linear infinite alternate; }
-@keyframes sk-drift {
-  0%, 12% { transform: translateX(0); }
-  88%, 100% { transform: translateX(var(--sk-shift, -40px)); }
+/* continuous right-to-left loop; --sk-loop = width of one copy */
+@keyframes sk-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--sk-loop, -100px)); }
 }
 
 /* the knob: play glyph when off, equalizer bars when playing */
@@ -163,7 +165,7 @@ body {
   .grain { animation: none; }
   .skiper-toggle { transition: none; }
   .skiper-toggle[aria-pressed="true"] .sk-eq i,
-  .sk-title.is-scrolling { animation: none; }
+  .sk-ticker.is-scrolling { animation: none; }
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none; }
 }

@@ -241,21 +241,34 @@
       })();
     }
 
-    // Show the current track's title in the toggle; drift it if it overflows.
+    // Show the current track's title as a continuous right-to-left ticker.
     function setTitle(text) {
-      const el = document.getElementById("sk-title");
-      if (!el) return;
-      el.textContent = text || "";
-      el.classList.remove("is-scrolling");
-      el.style.removeProperty("--sk-shift");
+      const ticker = document.getElementById("sk-ticker");
+      if (!ticker) return;
+      const label = text || "";
+      ticker.classList.remove("is-scrolling");
+      ticker.style.transform = "";
+      ticker.innerHTML = "";
+      const first = document.createElement("span");
+      first.className = "sk-title";
+      first.id = "sk-title";
+      first.textContent = label;
+      ticker.appendChild(first);
+      if (reduceMotion || !label) return;
       requestAnimationFrame(() => {
-        const wrap = el.parentElement;
-        const overflow = el.scrollWidth - wrap.clientWidth;
-        if (overflow > 4) {
-          el.style.setProperty("--sk-shift", "-" + (overflow + 8) + "px");
-          el.style.setProperty("--sk-dur", Math.max(6, overflow / 12) + "s");
-          el.classList.add("is-scrolling");
+        const wrap = ticker.parentElement;
+        const copyW = first.getBoundingClientRect().width;
+        if (!copyW) return;
+        // enough copies that one full loop never shows a gap
+        while (ticker.getBoundingClientRect().width < wrap.clientWidth + copyW) {
+          const clone = first.cloneNode(true);
+          clone.removeAttribute("id");
+          clone.setAttribute("aria-hidden", "true");
+          ticker.appendChild(clone);
         }
+        ticker.style.setProperty("--sk-loop", "-" + copyW + "px");
+        ticker.style.setProperty("--sk-dur", Math.max(5, copyW / 22) + "s");
+        ticker.classList.add("is-scrolling");
       });
     }
 
