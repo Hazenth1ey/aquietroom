@@ -12,7 +12,7 @@
   <!-- Rich Markdown editor -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/theme/toastui-editor-dark.min.css" />
-  <link rel="stylesheet" href="/studio/studio.css?v=6" />
+  <link rel="stylesheet" href="/studio/studio.css?v=7" />
 </head>
 <body>
   <div class="studio-bg" aria-hidden="true">
@@ -162,11 +162,14 @@
             <button class="btn btn-ghost" id="page-new">＋ New page</button>
           </div>
           <p class="muted" style="margin: -0.5rem 0 1.25rem;">
-            Build pages from blocks — hero, prose, image, quote, divider.
-            Pages marked "in navigation" appear in the site's menu.
+            All of the site's pages. Core pages can be edited but not removed;
+            new pages are built from blocks and can be added to the menu.
           </p>
           <div id="pages-list" class="post-list"><p class="muted">Loading…</p></div>
         </div>
+
+        <!-- core page editors (About / Projects), built by JS -->
+        <div id="core-editor" hidden></div>
 
         <!-- page editor -->
         <div id="page-editor" hidden>
@@ -215,6 +218,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor.min.js"></script>
-  <script src="/studio/app.js?v=5"></script>
+  <script src="/studio/app.js?v=6"></script>
 </body>
 </html>
