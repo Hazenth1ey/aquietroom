@@ -109,12 +109,20 @@ body {
   transition: width 0.55s cubic-bezier(0.34, 1.42, 0.5, 1),
     border-color 0.4s var(--ease), background 0.4s var(--ease);
 }
-.skiper-toggle:hover { border-color: rgba(157, 176, 216, 0.4); }
-.skiper-toggle[aria-pressed="true"] { width: 180px; border-color: rgba(157, 176, 216, 0.4); }
+/* stays a circle; expands on hover, tap, or keyboard focus */
+.skiper-toggle:hover,
+.skiper-toggle:focus-visible,
+.skiper-toggle:active {
+  width: 180px;
+  border-color: rgba(157, 176, 216, 0.4);
+}
+.skiper-toggle[aria-pressed="true"] { border-color: rgba(157, 176, 216, 0.3); }
 
 /* the shapes that reveal when open */
 .sk-reveal { display: flex; align-items: center; gap: 8px; flex: none; opacity: 0; transform: translateX(10px); transition: opacity 0.3s var(--ease), transform 0.45s var(--ease); }
-.skiper-toggle[aria-pressed="true"] .sk-reveal { opacity: 1; transform: none; transition-delay: 0.2s; }
+.skiper-toggle:hover .sk-reveal,
+.skiper-toggle:focus-visible .sk-reveal,
+.skiper-toggle:active .sk-reveal { opacity: 1; transform: none; transition-delay: 0.15s; }
 .sk-bar { width: 56px; height: 8px; border-radius: 999px; background: rgba(231, 228, 238, 0.22); flex: none; }
 /* dots are driven by JS from the live audio level (see meter() in main.js) */
 .sk-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(231, 228, 238, 0.35); flex: none; opacity: 0.4; will-change: opacity, transform; }

@@ -8,6 +8,10 @@ const MONTHS = [
 const mdLib = markdownIt({ html: true, linkify: true, typographer: false });
 
 module.exports = function (eleventyConfig) {
+  // Cache-buster stamped at build time — every deploy gets fresh asset URLs,
+  // so browsers/CDNs can never serve a stale style.css or main.js again.
+  eleventyConfig.addGlobalData("assetVersion", String(Date.now()));
+
   // Render Markdown coming from data files (e.g. the CMS-edited About body).
   eleventyConfig.addFilter("md", (s) => (s ? mdLib.render(String(s)) : ""));
   eleventyConfig.addFilter("mdInline", (s) => (s ? mdLib.renderInline(String(s)) : ""));
