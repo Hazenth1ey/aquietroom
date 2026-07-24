@@ -480,6 +480,73 @@
     window.addEventListener("popstate", () => go(location.href, false));
   }
 
+  /* ---- Gallery lightbox (delegated; survives router swaps) ---- */
+  function lightbox() {
+    let overlay = null, items = [], idx = 0;
+
+    function build() {
+      overlay = document.createElement("div");
+      overlay.className = "lightbox";
+      overlay.hidden = true;
+      overlay.innerHTML =
+        '<button class="lightbox-btn lb-close" aria-label="Close">✕</button>' +
+        '<button class="lightbox-btn lb-prev" aria-label="Previous">←</button>' +
+        '<img alt="" />' +
+        '<button class="lightbox-btn lb-next" aria-label="Next">→</button>' +
+        '<p class="lightbox-caption"></p>';
+      document.body.appendChild(overlay);
+      overlay.querySelector(".lb-close").addEventListener("click", close);
+      overlay.querySelector(".lb-prev").addEventListener("click", () => step(-1));
+      overlay.querySelector(".lb-next").addEventListener("click", () => step(1));
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+    }
+
+    function show() {
+      const it = items[idx];
+      overlay.querySelector("img").src = it.src;
+      overlay.querySelector("img").alt = it.caption || "";
+      overlay.querySelector(".lightbox-caption").textContent = it.caption || "";
+      const many = items.length > 1;
+      overlay.querySelector(".lb-prev").hidden = !many;
+      overlay.querySelector(".lb-next").hidden = !many;
+    }
+
+    function open(list, start) {
+      if (!overlay) build();
+      items = list;
+      idx = start;
+      show();
+      overlay.hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+    function close() {
+      overlay.hidden = true;
+      document.body.style.overflow = "";
+    }
+    function step(d) {
+      idx = (idx + d + items.length) % items.length;
+      show();
+    }
+
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".masonry-link");
+      if (!btn) return;
+      const links = Array.from(document.querySelectorAll(".masonry-link"));
+      const list = links.map((l) => ({
+        src: l.querySelector("img") ? l.querySelector("img").src : "",
+        caption: l.dataset.caption || "",
+      }));
+      open(list, links.indexOf(btn));
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!overlay || overlay.hidden) return;
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowLeft") step(-1);
+      if (e.key === "ArrowRight") step(1);
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     reveal();
     ambient();
@@ -487,5 +554,6 @@
     soundscape();
     setPortalState();
     router();
+    lightbox();
   });
 })();
