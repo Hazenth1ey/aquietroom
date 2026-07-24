@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/style.css?v={{ assetVersion }}" />
 </head>
 <body>
   <canvas id="ambient"></canvas>
@@ -64,6 +64,6 @@
   </button>
 
   <script id="soundtrack" type="application/json">{{ soundtrack.tracks | dump | safe }}</script>
-  <script src="/js/main.js"></script>
+  <script src="/js/main.js?v={{ assetVersion }}"></script>
 </body>
 </html>
