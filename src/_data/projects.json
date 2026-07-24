@@ -3,17 +3,6 @@
   "gallery": [],
   "items": [
     {
-      "title": "a quiet room",
-      "year": "2026",
-      "description": "This very place — a hand-built portal for writing and wandering. No framework, no noise, just plain HTML and a little drifting dust.",
-      "tags": [
-        "html",
-        "css",
-        "canvas"
-      ],
-      "url": ""
-    },
-    {
       "title": "untitled, in progress",
       "year": "—",
       "description": "Something I'm still shaping in the dark. It'll surface here when it's ready to be seen.",
