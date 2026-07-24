@@ -1,6 +1,19 @@
 {
   "intro": "A handful of things I've built, broken, and come back to.",
-  "gallery": [],
+  "gallery": [
+    {
+      "src": "/uploads/1784912971552-chatgpt-image-jul-25-2026-12_00_55-am.png",
+      "caption": ""
+    },
+    {
+      "src": "/uploads/1784912990872-chatgpt-image-jul-24-2026-11_58_26-pm.png",
+      "caption": ""
+    },
+    {
+      "src": "/uploads/1784913004686-chatgpt-image-jul-24-2026-11_53_38-pm.png",
+      "caption": ""
+    }
+  ],
   "items": [
     {
       "title": "untitled, in progress",
