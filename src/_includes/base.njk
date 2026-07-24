@@ -49,8 +49,18 @@
     {% endif %}
   </div>
 
-  <button id="sound-toggle" class="sound-toggle" aria-pressed="false" aria-label="Toggle ambient sound" title="Ambient sound">
-    <span class="bars"><i></i><i></i><i></i></span>
+  <button id="sound-toggle" class="skiper-toggle" aria-pressed="false" aria-label="Toggle ambient sound" title="Ambient sound">
+    <span class="sk-reveal" aria-hidden="true">
+      <span class="sk-bar"></span>
+      <span class="sk-dot"></span>
+      <span class="sk-dot"></span>
+      <span class="sk-dot"></span>
+      <span class="sk-dot"></span>
+    </span>
+    <span class="sk-knob" aria-hidden="true">
+      <svg class="sk-play" viewBox="-1 0 12 14" xmlns="http://www.w3.org/2000/svg"><path d="M0.9375 13.2422C1.25 13.2422 1.51562 13.1172 1.82812 12.9375L10.9375 7.67188C11.5859 7.28906 11.8125 7.03906 11.8125 6.625C11.8125 6.21094 11.5859 5.96094 10.9375 5.58594L1.82812 0.3125C1.51562 0.132812 1.25 0.015625 0.9375 0.015625C0.359375 0.015625 0 0.453125 0 1.13281V12.1172C0 12.7969 0.359375 13.2422 0.9375 13.2422Z"/></svg>
+      <span class="sk-eq"><i></i><i></i><i></i></span>
+    </span>
   </button>
 
   <script id="soundtrack" type="application/json">{{ soundtrack.tracks | dump | safe }}</script>

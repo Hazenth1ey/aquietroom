@@ -86,36 +86,61 @@ body {
   background: radial-gradient(130% 110% at 50% 34%, transparent 52%, rgba(0, 0, 0, 0.55) 100%);
 }
 
-.sound-toggle {
+/* Skiper3-style ambient-sound toggle — a capsule that springs open */
+.skiper-toggle {
   position: fixed;
   right: 1.35rem;
   bottom: 1.35rem;
   z-index: 6;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
+  height: 52px;
+  width: 52px;
+  padding: 6px;
+  border-radius: 999px;
   border: 1px solid var(--line);
   background: rgba(14, 14, 21, 0.55);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
-  color: var(--ink-faint);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
   cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: color 0.4s var(--ease), border-color 0.4s var(--ease), transform 0.4s var(--ease);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  transition: width 0.55s cubic-bezier(0.34, 1.42, 0.5, 1),
+    border-color 0.4s var(--ease), background 0.4s var(--ease);
 }
-.sound-toggle:hover { color: var(--ink); border-color: var(--glow); transform: translateY(-2px); }
-.sound-toggle .bars { display: flex; align-items: center; gap: 2px; height: 14px; }
-.sound-toggle .bars i { width: 2px; height: 4px; background: currentColor; border-radius: 2px; transition: height 0.3s var(--ease); }
-.sound-toggle[aria-pressed="true"] { color: var(--glow); border-color: rgba(157, 176, 216, 0.4); }
-.sound-toggle[aria-pressed="true"] .bars i { animation: bars 1.1s ease-in-out infinite; }
-.sound-toggle[aria-pressed="true"] .bars i:nth-child(2) { animation-delay: 0.18s; }
-.sound-toggle[aria-pressed="true"] .bars i:nth-child(3) { animation-delay: 0.36s; }
-@keyframes bars { 0%, 100% { height: 4px; } 50% { height: 13px; } }
+.skiper-toggle:hover { border-color: rgba(157, 176, 216, 0.4); }
+.skiper-toggle[aria-pressed="true"] { width: 180px; border-color: rgba(157, 176, 216, 0.4); }
+
+/* the shapes that reveal when open */
+.sk-reveal { display: flex; align-items: center; gap: 8px; flex: none; opacity: 0; transform: translateX(10px); transition: opacity 0.3s var(--ease), transform 0.45s var(--ease); }
+.skiper-toggle[aria-pressed="true"] .sk-reveal { opacity: 1; transform: none; transition-delay: 0.2s; }
+.sk-bar { width: 56px; height: 8px; border-radius: 999px; background: rgba(231, 228, 238, 0.22); flex: none; }
+.sk-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(231, 228, 238, 0.22); flex: none; }
+.skiper-toggle[aria-pressed="true"] .sk-dot { animation: sk-pulse 2.4s ease-in-out infinite; }
+.skiper-toggle[aria-pressed="true"] .sk-dot:nth-child(3) { animation-delay: 0.3s; }
+.skiper-toggle[aria-pressed="true"] .sk-dot:nth-child(4) { animation-delay: 0.6s; }
+.skiper-toggle[aria-pressed="true"] .sk-dot:nth-child(5) { animation-delay: 0.9s; }
+@keyframes sk-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+/* the knob: play glyph when off, equalizer bars when playing */
+.sk-knob { flex: none; width: 40px; height: 40px; border-radius: 50%; background: rgba(157, 176, 216, 0.12); display: grid; place-items: center; color: var(--ink-faint); transition: color 0.4s var(--ease), background 0.4s var(--ease); }
+.skiper-toggle:hover .sk-knob { color: var(--ink); }
+.skiper-toggle[aria-pressed="true"] .sk-knob { color: var(--glow); background: rgba(157, 176, 216, 0.2); }
+.sk-play { width: 14px; height: 14px; fill: currentColor; }
+.skiper-toggle[aria-pressed="true"] .sk-play { display: none; }
+.sk-eq { display: none; align-items: center; gap: 2.5px; height: 14px; }
+.skiper-toggle[aria-pressed="true"] .sk-eq { display: flex; }
+.sk-eq i { width: 2.5px; height: 5px; border-radius: 2px; background: currentColor; animation: sk-eq 1.05s ease-in-out infinite; }
+.sk-eq i:nth-child(2) { animation-delay: 0.18s; }
+.sk-eq i:nth-child(3) { animation-delay: 0.36s; }
+@keyframes sk-eq { 0%, 100% { height: 5px; } 50% { height: 13px; } }
 
 @media (prefers-reduced-motion: reduce) {
   .grain { animation: none; }
-  .sound-toggle[aria-pressed="true"] .bars i { animation: none; height: 9px; }
+  .skiper-toggle { transition: none; }
+  .skiper-toggle[aria-pressed="true"] .sk-eq i,
+  .skiper-toggle[aria-pressed="true"] .sk-dot { animation: none; height: 9px; }
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none; }
 }
