@@ -563,7 +563,7 @@
     if (!state.editor) {
       state.editor = new window.toastui.Editor({
         el: $("#editor"),
-        height: "520px",
+        height: window.matchMedia("(max-width: 760px)").matches ? "400px" : "520px",
         initialEditType: "wysiwyg",
         previewStyle: "tab",
         theme: "dark",
