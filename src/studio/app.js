@@ -640,25 +640,15 @@
     coreShell("About page", body);
   }
 
-  function renderCoreProjects() {
-    const d = core.data;
-    d.items = Array.isArray(d.items) ? d.items : [];
-    d.gallery = Array.isArray(d.gallery) ? d.gallery : [];
-    const body = document.createElement("div");
-    body.appendChild(blockField("Intro (the italic line under the heading)", d.intro, (v) => (d.intro = v), true));
+  // Reusable image-set editor: thumbnails + captions + reorder + multi-upload.
+  // Mutates `arr` ({src, caption} entries) in place.
+  function galleryEditor(arr) {
+    const grid = document.createElement("div");
+    grid.className = "gallery-grid";
 
-    /* ---- portfolio gallery ---- */
-    const gLabel = document.createElement("span");
-    gLabel.className = "field-label";
-    gLabel.textContent = "Portfolio gallery (masonry grid; click to view large)";
-    body.appendChild(gLabel);
-    const galleryBox = document.createElement("div");
-    galleryBox.className = "gallery-grid";
-    body.appendChild(galleryBox);
-
-    function renderGallery() {
-      galleryBox.innerHTML = "";
-      d.gallery.forEach((g, i) => {
+    function render() {
+      grid.innerHTML = "";
+      arr.forEach((g, i) => {
         const cell = document.createElement("div");
         cell.className = "gallery-cell";
         const img = document.createElement("img");
@@ -673,9 +663,9 @@
         cell.appendChild(cap);
         const tools = document.createElement("div");
         tools.className = "gallery-tools";
-        [["←", () => { if (i > 0) { d.gallery.splice(i - 1, 0, d.gallery.splice(i, 1)[0]); renderGallery(); } }],
-         ["→", () => { if (i < d.gallery.length - 1) { d.gallery.splice(i + 1, 0, d.gallery.splice(i, 1)[0]); renderGallery(); } }],
-         ["✕", () => { if (confirm("Remove this image from the gallery?")) { d.gallery.splice(i, 1); renderGallery(); } }]]
+        [["←", () => { if (i > 0) { arr.splice(i - 1, 0, arr.splice(i, 1)[0]); render(); } }],
+         ["→", () => { if (i < arr.length - 1) { arr.splice(i + 1, 0, arr.splice(i, 1)[0]); render(); } }],
+         ["✕", () => { if (confirm("Remove this image?")) { arr.splice(i, 1); render(); } }]]
           .forEach(([txt, fn]) => {
             const b = document.createElement("button");
             b.className = "blk-btn" + (txt === "✕" ? " blk-del" : "");
@@ -684,7 +674,7 @@
             tools.appendChild(b);
           });
         cell.appendChild(tools);
-        galleryBox.appendChild(cell);
+        grid.appendChild(cell);
       });
 
       const addWrap = document.createElement("div");
@@ -702,17 +692,33 @@
         const files = Array.from(e.target.files || []);
         for (const f of files) {
           const url = await uploadAsset(f, "image");
-          if (url) d.gallery.push({ src: url, caption: "" });
+          if (url) arr.push({ src: url, caption: "" });
         }
-        renderGallery();
+        render();
         if (files.length) toast(`${files.length} image${files.length > 1 ? "s" : ""} added — remember to Publish changes.`);
         e.target.value = "";
       });
       addWrap.appendChild(add);
       addWrap.appendChild(file);
-      galleryBox.appendChild(addWrap);
+      grid.appendChild(addWrap);
     }
-    renderGallery();
+    render();
+    return grid;
+  }
+
+  function renderCoreProjects() {
+    const d = core.data;
+    d.items = Array.isArray(d.items) ? d.items : [];
+    d.gallery = Array.isArray(d.gallery) ? d.gallery : [];
+    const body = document.createElement("div");
+    body.appendChild(blockField("Intro (the italic line under the heading)", d.intro, (v) => (d.intro = v), true));
+
+    /* ---- portfolio gallery ---- */
+    const gLabel = document.createElement("span");
+    gLabel.className = "field-label";
+    gLabel.textContent = "Portfolio gallery (masonry grid; click to view large)";
+    body.appendChild(gLabel);
+    body.appendChild(galleryEditor(d.gallery));
 
     const label = document.createElement("span");
     label.className = "field-label";
@@ -750,6 +756,12 @@
         card.appendChild(blockField("Description", it.description, (v) => (it.description = v), true));
         card.appendChild(blockField("Tags (comma separated)", (it.tags || []).join(", "), (v) => (it.tags = v.split(",").map((t) => t.trim()).filter(Boolean))));
         card.appendChild(blockField("Link (optional)", it.url, (v) => (it.url = v)));
+        it.images = Array.isArray(it.images) ? it.images : [];
+        const imLabel = document.createElement("span");
+        imLabel.className = "field-label";
+        imLabel.textContent = "Images (shown on this project's card)";
+        card.appendChild(imLabel);
+        card.appendChild(galleryEditor(it.images));
         itemsBox.appendChild(card);
       });
       const add = document.createElement("button");

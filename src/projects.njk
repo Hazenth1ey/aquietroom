@@ -13,7 +13,7 @@ description: "Things I've made and things I'm slowly tending to."
   </p>
 
   {% if projects.gallery and projects.gallery.length %}
-  <div class="masonry" data-reveal="3">
+  <div class="masonry" data-reveal="3" data-gallery>
     {% for g in projects.gallery %}
     <figure class="masonry-item">
       <button class="masonry-link" type="button" data-caption="{{ g.caption or '' }}" aria-label="View larger{% if g.caption %}: {{ g.caption }}{% endif %}">
@@ -30,6 +30,15 @@ description: "Things I've made and things I'm slowly tending to."
     <li class="work" data-reveal="{{ loop.index0 + 4 }}">
       <h3>{{ p.title }}{% if p.year %} <span class="year">{{ p.year }}</span>{% endif %}</h3>
       <p>{{ p.description }}</p>
+      {% if p.images and p.images.length %}
+      <div class="work-images" data-gallery>
+        {% for im in p.images %}
+        <button class="masonry-link work-image" type="button" data-caption="{{ im.caption or p.title }}" aria-label="View larger">
+          <img src="{{ im.src }}" alt="{{ im.caption or p.title }}" loading="lazy" />
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
       {% if p.tags and p.tags.length %}
       <div class="tags">
         {% for t in p.tags %}<span class="tag">{{ t }}</span>{% endfor %}
