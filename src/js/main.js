@@ -531,7 +531,9 @@
     document.addEventListener("click", (e) => {
       const btn = e.target.closest(".masonry-link");
       if (!btn) return;
-      const links = Array.from(document.querySelectorAll(".masonry-link"));
+      // browse within this gallery group only (main grid or one card's set)
+      const scope = btn.closest("[data-gallery]") || document;
+      const links = Array.from(scope.querySelectorAll(".masonry-link"));
       const list = links.map((l) => ({
         src: l.querySelector("img") ? l.querySelector("img").src : "",
         caption: l.dataset.caption || "",

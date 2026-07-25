@@ -509,6 +509,19 @@ a { color: var(--glow); }
   box-shadow: 0 0 0 3px rgba(157, 176, 216, 0.25);
 }
 
+/* image strips inside project cards */
+.work-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+.work-image img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+}
+
 /* lightbox */
 .lightbox {
   position: fixed;
