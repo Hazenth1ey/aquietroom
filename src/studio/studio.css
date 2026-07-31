@@ -361,6 +361,11 @@ input, button, textarea { font-family: inherit; }
   border: 1px solid var(--line); border-radius: 18px;
   background: var(--panel-2); padding: 10px; display: block;
 }
+.logo-preview--mark {
+  display: grid; place-items: center;
+  font-size: 2rem; color: #0b0b12;
+  background: radial-gradient(circle at 40% 35%, #f2eff8, var(--glow) 58%, #5b6690);
+}
 
 .core-select {
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;

@@ -380,7 +380,7 @@
       { key: "journal", title: "Journal", meta: "/journal/ · entries live in My content" },
       { key: "projects", title: "Projects", meta: "/projects/ · intro + project cards" },
       { key: "about", title: "About", meta: "/about/ · who keeps this room" },
-      { key: "site", title: "Site identity", meta: "logo — browser tab & studio mark" },
+      { key: "site", title: "Site identity", meta: "browser-tab icon · studio logo" },
     ];
     CORE.forEach((c) => {
       const row = document.createElement("div");
@@ -780,71 +780,96 @@
     coreShell("Projects page", body);
   }
 
-  // Apply the site logo to the studio chrome (tab icon + brand marks).
-  function applyBrand(url) {
-    if (!url) return;
+  // Apply the identity to the studio chrome: favicon → tab icon,
+  // studioLogo → the sidebar/login marks (empty = the default ✦ orb).
+  function applyBrand(data) {
+    if (!data) return;
     const link = document.querySelector('link[rel="icon"]');
-    if (link) link.href = url;
-    if (url !== "/favicon.svg") {
-      document.querySelectorAll(".brand-mark, .login-mark").forEach((el) => {
-        el.innerHTML = '<img src="' + url + '" alt="" />';
-      });
-    }
+    if (link && data.favicon) link.href = data.favicon;
+    document.querySelectorAll(".brand-mark, .login-mark").forEach((el) => {
+      el.innerHTML = data.studioLogo
+        ? '<img src="' + data.studioLogo + '" alt="" />'
+        : "✦";
+    });
   }
 
   function renderCoreSite() {
     const d = core.data;
     const body = document.createElement("div");
 
-    const hint = document.createElement("p");
-    hint.className = "muted";
-    hint.style.marginBottom = "1.2rem";
-    hint.textContent =
-      "One image serves as the site's browser-tab icon and the studio's mark. Square works best — SVG or PNG, ideally 128px or larger.";
-    body.appendChild(hint);
+    // One reusable section: label + hint + preview + choose/restore.
+    function identSection(labelText, hintText, getUrl, setUrl, restoreText, restoreValue, emptyMark) {
+      const label = document.createElement("span");
+      label.className = "field-label";
+      label.textContent = labelText;
+      body.appendChild(label);
 
-    const label = document.createElement("span");
-    label.className = "field-label";
-    label.textContent = "Current logo";
-    body.appendChild(label);
+      const hint = document.createElement("p");
+      hint.className = "muted";
+      hint.style.margin = "-0.3rem 0 0.9rem";
+      hint.textContent = hintText;
+      body.appendChild(hint);
 
-    const preview = document.createElement("img");
-    preview.className = "logo-preview";
-    preview.src = d.favicon || "/favicon.svg";
-    preview.alt = "";
-    body.appendChild(preview);
-
-    const row = document.createElement("div");
-    row.style.cssText = "display:flex; gap:0.75rem; margin-top:1rem; flex-wrap:wrap;";
-    const pick = document.createElement("button");
-    pick.className = "btn btn-soft";
-    pick.textContent = "Choose new logo";
-    const file = document.createElement("input");
-    file.type = "file";
-    file.accept = "image/svg+xml,image/png,image/jpeg,image/webp,image/x-icon";
-    file.hidden = true;
-    pick.addEventListener("click", () => file.click());
-    file.addEventListener("change", async (e) => {
-      if (!e.target.files || !e.target.files[0]) return;
-      const url = await uploadAsset(e.target.files[0], "logo");
-      if (url) {
-        d.favicon = url;
-        preview.src = url;
-        toast("Logo uploaded — click Publish changes to make it live.");
+      const preview = document.createElement("div");
+      function paint() {
+        const url = getUrl();
+        if (url) {
+          preview.innerHTML = '<img class="logo-preview" src="' + url + '" alt="" />';
+        } else {
+          preview.innerHTML = '<div class="logo-preview logo-preview--mark">' + (emptyMark || "✦") + "</div>";
+        }
       }
-      e.target.value = "";
-    });
-    const reset = document.createElement("button");
-    reset.className = "btn btn-link";
-    reset.textContent = "Restore the moon";
-    reset.addEventListener("click", () => {
-      d.favicon = "/favicon.svg";
-      preview.src = "/favicon.svg";
-    });
-    row.appendChild(pick);
-    row.appendChild(file);
-    row.appendChild(reset);
-    body.appendChild(row);
+      paint();
+      body.appendChild(preview);
+
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex; gap:0.75rem; margin:1rem 0 1.8rem; flex-wrap:wrap; align-items:center;";
+      const pick = document.createElement("button");
+      pick.className = "btn btn-soft";
+      pick.textContent = "Choose image";
+      const file = document.createElement("input");
+      file.type = "file";
+      file.accept = "image/svg+xml,image/png,image/jpeg,image/webp,image/x-icon";
+      file.hidden = true;
+      pick.addEventListener("click", () => file.click());
+      file.addEventListener("change", async (e) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const url = await uploadAsset(e.target.files[0], "logo");
+        if (url) {
+          setUrl(url);
+          paint();
+          toast("Image uploaded — click Publish changes to make it live.");
+        }
+        e.target.value = "";
+      });
+      const reset = document.createElement("button");
+      reset.className = "btn btn-link";
+      reset.textContent = restoreText;
+      reset.addEventListener("click", () => { setUrl(restoreValue); paint(); });
+      row.appendChild(pick);
+      row.appendChild(file);
+      row.appendChild(reset);
+      body.appendChild(row);
+    }
+
+    identSection(
+      "Browser tab icon",
+      "The favicon shown in browser tabs — for the site and the studio. Square SVG or PNG, ideally 128px or larger.",
+      () => d.favicon,
+      (v) => (d.favicon = v),
+      "Restore the moon",
+      "/favicon.svg"
+    );
+
+    identSection(
+      "Studio logo",
+      "The mark shown in the studio's sidebar and sign-in screen. Leave it on the default ✦ orb, or use your own.",
+      () => d.studioLogo,
+      (v) => (d.studioLogo = v),
+      "Restore the ✦ orb",
+      "",
+      "✦"
+    );
 
     coreShell("Site identity", body);
   }
@@ -863,7 +888,7 @@
       $("#core-save").disabled = true;
       const res = await putFile(path, JSON.stringify(core.data, null, 2) + "\n", `Update ${label}`, core.sha);
       core.sha = res.content && res.content.sha;
-      if (core.kind === "site") applyBrand(core.data.favicon);
+      if (core.kind === "site") applyBrand(core.data);
       setStatus("Published", "ok");
       toast(`${label} updated — live in about a minute.`);
     } catch (e) {
@@ -1300,7 +1325,7 @@
     // adopt the site's logo for the tab icon + studio marks
     fetch("/site.json")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d) applyBrand(d.favicon); })
+      .then((d) => { if (d) applyBrand(d); })
       .catch(() => {});
     const saved = localStorage.getItem(TOKEN_KEY);
     if (saved) { state.token = saved; start(); }
