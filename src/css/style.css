@@ -155,7 +155,6 @@ body {
   backdrop-filter: blur(9px);
   -webkit-backdrop-filter: blur(9px);
   color: var(--ink-faint);
-  font-size: 1.05rem;
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -163,6 +162,11 @@ body {
 }
 .site-theme-toggle:hover { color: var(--glow); border-color: rgba(157, 176, 216, 0.4); transform: translateY(-2px); }
 .site-theme-toggle:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(157, 176, 216, 0.25); }
+/* hand-drawn line icons — the sun shows in the dark room, the moon in the light one */
+.st-icon { width: 19px; height: 19px; display: block; grid-area: 1 / 1; opacity: 1; transform: none; transition: opacity 0.4s var(--ease), transform 0.5s var(--ease); }
+.st-moon { opacity: 0; transform: rotate(-40deg) scale(0.6); }
+html[data-theme="light"] .st-sun { opacity: 0; transform: rotate(50deg) scale(0.6); }
+html[data-theme="light"] .st-moon { opacity: 1; transform: none; }
 
 /* Skiper3-style ambient-sound toggle — a capsule that springs open */
 .skiper-toggle {

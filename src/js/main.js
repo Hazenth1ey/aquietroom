@@ -681,7 +681,6 @@
     if (!btn) return;
     function icon() {
       const light = document.documentElement.dataset.theme === "light";
-      btn.textContent = light ? "☾" : "☀";
       btn.title = light ? "Switch to night" : "Switch to day";
     }
     btn.addEventListener("click", () => {
