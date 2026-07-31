@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "title": "Philosophy",
+    "slug": "philosophy",
+    "description": "In this room, I wrote my philosophy and those I resonated with.",
+    "nav": false,
+    "blocks": [
+      {
+        "type": "hero",
+        "eyebrow": "",
+        "heading": "",
+        "lede": ""
+      }
+    ]
+  }
+]
