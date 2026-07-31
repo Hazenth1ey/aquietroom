@@ -553,6 +553,128 @@
     });
   }
 
+  /* ---- Sparkling star cursor trail (own layer, above content) ---- */
+  function cursorTrail() {
+    if (reduceMotion) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.id = "trail";
+    canvas.setAttribute("aria-hidden", "true");
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+
+    let w, h, dpr;
+    function size() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = canvas.width = Math.floor(innerWidth * dpr);
+      h = canvas.height = Math.floor(innerHeight * dpr);
+      canvas.style.width = innerWidth + "px";
+      canvas.style.height = innerHeight + "px";
+    }
+    size();
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(size, 200);
+    });
+
+    const PAL = {
+      dark: ["255,255,255", "185,200,235", "214,186,214"],
+      light: ["58,60,80", "74,84,124", "122,86,120"],
+    };
+    const MAX = 140;
+    const parts = [];
+
+    function sparkle(x, y, burst) {
+      if (parts.length >= MAX) parts.shift();
+      const speed = (burst ? 0.9 : 0.35) + Math.random() * (burst ? 1.4 : 0.5);
+      const ang = Math.random() * Math.PI * 2;
+      parts.push({
+        x: x * dpr,
+        y: y * dpr,
+        vx: Math.cos(ang) * speed * dpr,
+        vy: Math.sin(ang) * speed * dpr - 0.25 * dpr, // a touch of lift
+        life: 1,
+        decay: 0.012 + Math.random() * 0.02,
+        r: (0.5 + Math.random() * 1.5) * dpr,
+        rot: Math.random() * Math.PI,
+        tint: Math.floor(Math.random() * 3),
+      });
+    }
+
+    // spawn along the path, spaced by distance travelled
+    let lastX = null, lastY = null, acc = 0;
+    window.addEventListener(
+      "pointermove",
+      (e) => {
+        if (lastX != null) {
+          acc += Math.hypot(e.clientX - lastX, e.clientY - lastY);
+          while (acc > 14) {
+            acc -= 14;
+            sparkle(
+              e.clientX + (Math.random() - 0.5) * 6,
+              e.clientY + (Math.random() - 0.5) * 6,
+              false
+            );
+          }
+        }
+        lastX = e.clientX;
+        lastY = e.clientY;
+      },
+      { passive: true }
+    );
+
+    // a soft burst on click
+    window.addEventListener(
+      "pointerdown",
+      (e) => {
+        for (let i = 0; i < 7; i++) sparkle(e.clientX, e.clientY, true);
+      },
+      { passive: true }
+    );
+
+    function drawStar(x, y, r, alpha, tint, rot) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.strokeStyle = "rgba(" + tint + "," + alpha.toFixed(3) + ")";
+      ctx.lineWidth = Math.max(0.6 * dpr, r * 0.35);
+      const s = r * 3.2;
+      ctx.beginPath();
+      ctx.moveTo(-s, 0); ctx.lineTo(s, 0);
+      ctx.moveTo(0, -s); ctx.lineTo(0, s);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(" + tint + "," + Math.min(1, alpha * 1.3).toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    (function frame() {
+      ctx.clearRect(0, 0, w, h);
+      if (parts.length) {
+        const pal =
+          PAL[document.documentElement.dataset.theme === "light" ? "light" : "dark"];
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= 0.96;
+          p.vy = p.vy * 0.96 - 0.008 * dpr; // drift gently upward as it dies
+          p.life -= p.decay;
+          if (p.life <= 0) { parts.splice(i, 1); continue; }
+          // twinkle: flicker layered over the fade-out
+          const flicker = 0.7 + 0.3 * Math.sin(p.life * 40 + p.rot * 7);
+          const alpha = Math.max(0, p.life * p.life) * flicker * 0.9;
+          drawStar(p.x, p.y, p.r * (0.5 + p.life * 0.5), alpha, pal[p.tint], p.rot);
+        }
+      }
+      requestAnimationFrame(frame);
+    })();
+  }
+
   /* ---- Day/night toggle (persistent shell; theme set pre-paint in head) ---- */
   function themeControl() {
     const btn = document.getElementById("site-theme-toggle");
@@ -581,5 +703,6 @@
     router();
     lightbox();
     themeControl();
+    cursorTrail();
   });
 })();

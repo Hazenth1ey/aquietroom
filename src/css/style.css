@@ -133,6 +133,14 @@ body {
   background: radial-gradient(130% 110% at 50% 34%, transparent 52%, rgba(0, 0, 0, 0.55) 100%);
 }
 
+/* Sparkling star cursor trail — above content, below the controls */
+#trail {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
 /* Day/night toggle — a small circle resting above the sound capsule */
 .site-theme-toggle {
   position: fixed;
