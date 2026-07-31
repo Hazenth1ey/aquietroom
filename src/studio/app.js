@@ -16,6 +16,7 @@
     pagesPath: "src/_data/sitepages.json",
     aboutPath: "src/_data/about.json",
     projectsPath: "src/_data/projects.json",
+    sitePath: "src/_data/site.json",
     authBase: "https://aquietroom-auth.ivankolly.workers.dev",
   };
   const TOKEN_KEY = "qr_studio_token";
@@ -379,6 +380,7 @@
       { key: "journal", title: "Journal", meta: "/journal/ · entries live in My content" },
       { key: "projects", title: "Projects", meta: "/projects/ · intro + project cards" },
       { key: "about", title: "About", meta: "/about/ · who keeps this room" },
+      { key: "site", title: "Site identity", meta: "logo — browser tab & studio mark" },
     ];
     CORE.forEach((c) => {
       const row = document.createElement("div");
@@ -532,7 +534,10 @@
     $("#page-editor").hidden = true;
     box.hidden = false;
     box.innerHTML = '<div class="card"><p class="muted">Loading…</p></div>';
-    const path = kind === "about" ? CONFIG.aboutPath : CONFIG.projectsPath;
+    const path =
+      kind === "about" ? CONFIG.aboutPath
+      : kind === "site" ? CONFIG.sitePath
+      : CONFIG.projectsPath;
     try {
       const sha = await shaOf(path);
       const { raw } = await getFile(path);
@@ -540,6 +545,7 @@
       core.sha = sha;
       core.data = JSON.parse(raw || "{}");
       if (kind === "about") renderCoreAbout();
+      else if (kind === "site") renderCoreSite();
       else renderCoreProjects();
     } catch (e) {
       box.innerHTML = `<div class="card"><p class="muted">${escapeHtml(e.message)}</p></div>`;
@@ -774,16 +780,92 @@
     coreShell("Projects page", body);
   }
 
+  // Apply the site logo to the studio chrome (tab icon + brand marks).
+  function applyBrand(url) {
+    if (!url) return;
+    const link = document.querySelector('link[rel="icon"]');
+    if (link) link.href = url;
+    if (url !== "/favicon.svg") {
+      document.querySelectorAll(".brand-mark, .login-mark").forEach((el) => {
+        el.innerHTML = '<img src="' + url + '" alt="" />';
+      });
+    }
+  }
+
+  function renderCoreSite() {
+    const d = core.data;
+    const body = document.createElement("div");
+
+    const hint = document.createElement("p");
+    hint.className = "muted";
+    hint.style.marginBottom = "1.2rem";
+    hint.textContent =
+      "One image serves as the site's browser-tab icon and the studio's mark. Square works best — SVG or PNG, ideally 128px or larger.";
+    body.appendChild(hint);
+
+    const label = document.createElement("span");
+    label.className = "field-label";
+    label.textContent = "Current logo";
+    body.appendChild(label);
+
+    const preview = document.createElement("img");
+    preview.className = "logo-preview";
+    preview.src = d.favicon || "/favicon.svg";
+    preview.alt = "";
+    body.appendChild(preview);
+
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex; gap:0.75rem; margin-top:1rem; flex-wrap:wrap;";
+    const pick = document.createElement("button");
+    pick.className = "btn btn-soft";
+    pick.textContent = "Choose new logo";
+    const file = document.createElement("input");
+    file.type = "file";
+    file.accept = "image/svg+xml,image/png,image/jpeg,image/webp,image/x-icon";
+    file.hidden = true;
+    pick.addEventListener("click", () => file.click());
+    file.addEventListener("change", async (e) => {
+      if (!e.target.files || !e.target.files[0]) return;
+      const url = await uploadAsset(e.target.files[0], "logo");
+      if (url) {
+        d.favicon = url;
+        preview.src = url;
+        toast("Logo uploaded — click Publish changes to make it live.");
+      }
+      e.target.value = "";
+    });
+    const reset = document.createElement("button");
+    reset.className = "btn btn-link";
+    reset.textContent = "Restore the moon";
+    reset.addEventListener("click", () => {
+      d.favicon = "/favicon.svg";
+      preview.src = "/favicon.svg";
+    });
+    row.appendChild(pick);
+    row.appendChild(file);
+    row.appendChild(reset);
+    body.appendChild(row);
+
+    coreShell("Site identity", body);
+  }
+
   async function saveCore() {
-    const path = core.kind === "about" ? CONFIG.aboutPath : CONFIG.projectsPath;
-    const label = core.kind === "about" ? "About" : "Projects";
+    const path =
+      core.kind === "about" ? CONFIG.aboutPath
+      : core.kind === "site" ? CONFIG.sitePath
+      : CONFIG.projectsPath;
+    const label =
+      core.kind === "about" ? "About"
+      : core.kind === "site" ? "Site identity"
+      : "Projects";
     try {
       setStatus("Publishing…");
       $("#core-save").disabled = true;
-      const res = await putFile(path, JSON.stringify(core.data, null, 2) + "\n", `Update ${label} page`, core.sha);
+      const res = await putFile(path, JSON.stringify(core.data, null, 2) + "\n", `Update ${label}`, core.sha);
       core.sha = res.content && res.content.sha;
+      if (core.kind === "site") applyBrand(core.data.favicon);
       setStatus("Published", "ok");
-      toast(`${label} page updated — live in about a minute.`);
+      toast(`${label} updated — live in about a minute.`);
     } catch (e) {
       setStatus("Save failed", "err");
       toast(e.message, true);
@@ -1215,6 +1297,11 @@
       applyTheme(currentTheme() === "light" ? "dark" : "light")
     );
     applyTheme(currentTheme()); // sync the toggle icon with the saved theme
+    // adopt the site's logo for the tab icon + studio marks
+    fetch("/site.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) applyBrand(d.favicon); })
+      .catch(() => {});
     const saved = localStorage.getItem(TOKEN_KEY);
     if (saved) { state.token = saved; start(); }
   });

@@ -70,15 +70,17 @@
       stars = Array.from({ length: count }, () => spawn(true));
     }
 
+    // star tints per theme: bright motes at night, dark motes at daybreak
+    const PALETTES = {
+      dark: { white: "255,255,255", blue: "175,192,230", violet: "206,178,206" },
+      light: { white: "52,54,72", blue: "74,84,124", violet: "122,86,120" },
+    };
+
     // depth 0 = far/small/dim, 1 = near/big/bright
     function spawn(scatterY) {
       const depth = Math.random();
-      const white = Math.random() > 0.24;
-      const tint = white
-        ? "255,255,255"
-        : Math.random() > 0.5
-        ? "175,192,230"
-        : "206,178,206";
+      const kind =
+        Math.random() > 0.24 ? "white" : Math.random() > 0.5 ? "blue" : "violet";
       return {
         x: Math.random() * w,
         y: scatterY ? Math.random() * h : h + 6,
@@ -89,7 +91,7 @@
         twSpeed: 0.004 + Math.random() * 0.012,
         // a real upward current — nearer stars rise faster, with variance
         vy: -(0.06 + depth * 0.26 + Math.random() * 0.05) * dpr,
-        tint: tint,
+        kind: kind,
       };
     }
 
@@ -97,6 +99,8 @@
       ctx.clearRect(0, 0, w, h);
       par.x += (par.tx - par.x) * 0.05;
       par.y += (par.ty - par.y) * 0.05;
+      const pal =
+        PALETTES[document.documentElement.dataset.theme === "light" ? "light" : "dark"];
 
       for (const s of stars) {
         s.y += s.vy * (1 + audioLevel * 1.6); // the current quickens with the music
@@ -119,8 +123,8 @@
         // faint halo, only on the very nearest stars
         if (s.depth > 0.92) {
           const halo = ctx.createRadialGradient(x, y, 0, x, y, r * 4);
-          halo.addColorStop(0, "rgba(" + s.tint + "," + (a * 0.22).toFixed(3) + ")");
-          halo.addColorStop(1, "rgba(" + s.tint + ",0)");
+          halo.addColorStop(0, "rgba(" + pal[s.kind] + "," + (a * 0.22).toFixed(3) + ")");
+          halo.addColorStop(1, "rgba(" + pal[s.kind] + ",0)");
           ctx.beginPath();
           ctx.arc(x, y, r * 4, 0, Math.PI * 2);
           ctx.fillStyle = halo;
@@ -129,7 +133,7 @@
 
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + s.tint + "," + a.toFixed(3) + ")";
+        ctx.fillStyle = "rgba(" + pal[s.kind] + "," + a.toFixed(3) + ")";
         ctx.fill();
       }
       requestAnimationFrame(frame);
@@ -549,6 +553,25 @@
     });
   }
 
+  /* ---- Day/night toggle (persistent shell; theme set pre-paint in head) ---- */
+  function themeControl() {
+    const btn = document.getElementById("site-theme-toggle");
+    if (!btn) return;
+    function icon() {
+      const light = document.documentElement.dataset.theme === "light";
+      btn.textContent = light ? "☾" : "☀";
+      btn.title = light ? "Switch to night" : "Switch to day";
+    }
+    btn.addEventListener("click", () => {
+      const next =
+        document.documentElement.dataset.theme === "light" ? "dark" : "light";
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem("qr_site_theme", next); } catch (e) {}
+      icon();
+    });
+    icon();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     reveal();
     ambient();
@@ -557,5 +580,6 @@
     setPortalState();
     router();
     lightbox();
+    themeControl();
   });
 })();

@@ -6,7 +6,11 @@
   <title>{{ seoTitle or (title + " — a quiet room") }}</title>
   <meta name="description" content="{{ description }}" />
   <meta name="theme-color" content="#08080c" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="{{ site.favicon or '/favicon.svg' }}" />
+  <script>
+    // apply the saved theme before paint so there's no flash
+    try { document.documentElement.dataset.theme = localStorage.getItem("qr_site_theme") || "dark"; } catch (e) {}
+  </script>
   <meta property="og:type" content="{{ ogType or 'website' }}" />
   <meta property="og:title" content="{{ ogTitle or seoTitle or title }}" />
   <meta property="og:description" content="{{ ogDescription or description }}" />
@@ -51,6 +55,8 @@
     </footer>
     {% endif %}
   </div>
+
+  <button id="site-theme-toggle" class="site-theme-toggle" aria-label="Switch between light and dark" title="Theme">☀</button>
 
   <button id="sound-toggle" class="skiper-toggle" aria-pressed="false" aria-label="Toggle ambient sound" title="Ambient sound">
     <span class="sk-reveal" aria-hidden="true">
