@@ -1107,26 +1107,57 @@
     $("#login").hidden = true;
     $("#app").hidden = false;
 
-    if (!state.editor) {
-      state.editor = new window.toastui.Editor({
-        el: $("#editor"),
-        height: window.matchMedia("(max-width: 760px)").matches ? "400px" : "520px",
-        initialEditType: "wysiwyg",
-        previewStyle: "tab",
-        theme: "dark",
-        usageStatistics: false,
-        placeholder: "Write…",
-        toolbarItems: [
-          ["heading", "bold", "italic", "strike"],
-          ["hr", "quote"],
-          ["ul", "ol"],
-          ["link", "image"],
-          ["code", "codeblock"],
-        ],
-      });
-    }
+    if (!state.editor) buildEditor("");
     resetForm();
     switchView("write");
+  }
+
+  /* ---------------- theme ---------------- */
+  function currentTheme() {
+    return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  }
+
+  // (Re)create the Toast UI editor in the active theme, preserving content.
+  function buildEditor(initialMd) {
+    if (state.editor) {
+      try { state.editor.destroy(); } catch (e) {}
+      state.editor = null;
+      $("#editor").innerHTML = "";
+    }
+    const opts = {
+      el: $("#editor"),
+      height: window.matchMedia("(max-width: 760px)").matches ? "400px" : "520px",
+      initialEditType: "wysiwyg",
+      previewStyle: "tab",
+      usageStatistics: false,
+      placeholder: "Write…",
+      initialValue: initialMd || "",
+      toolbarItems: [
+        ["heading", "bold", "italic", "strike"],
+        ["hr", "quote"],
+        ["ul", "ol"],
+        ["link", "image"],
+        ["code", "codeblock"],
+      ],
+    };
+    if (currentTheme() === "dark") opts.theme = "dark";
+    state.editor = new window.toastui.Editor(opts);
+  }
+
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem("qr_studio_theme", t); } catch (e) {}
+    const btn = $("#theme-toggle");
+    if (btn) {
+      btn.textContent = t === "light" ? "☾" : "☀";
+      btn.title = t === "light" ? "Switch to dark" : "Switch to light";
+    }
+    // the rich editor only re-skins on rebuild — keep the draft intact
+    if (state.editor && window.toastui) {
+      let md = "";
+      try { md = state.editor.getMarkdown(); } catch (e) {}
+      buildEditor(md);
+    }
   }
 
   function wire() {
@@ -1180,6 +1211,10 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     wire();
+    $("#theme-toggle").addEventListener("click", () =>
+      applyTheme(currentTheme() === "light" ? "dark" : "light")
+    );
+    applyTheme(currentTheme()); // sync the toggle icon with the saved theme
     const saved = localStorage.getItem(TOKEN_KEY);
     if (saved) { state.token = saved; start(); }
   });
