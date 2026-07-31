@@ -147,15 +147,15 @@ body {
   right: 1.35rem;
   bottom: calc(1.35rem + 52px + 0.75rem);
   z-index: 6;
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: rgba(14, 14, 21, 0.55);
   backdrop-filter: blur(9px);
   -webkit-backdrop-filter: blur(9px);
   color: var(--ink-faint);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   cursor: pointer;
   display: grid;
   place-items: center;
