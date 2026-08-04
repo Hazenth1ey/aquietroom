@@ -204,6 +204,8 @@
   function soundscape() {
     const btn = document.getElementById("sound-toggle");
     if (!btn) return;
+    const shell = document.getElementById("sound-shell");
+    const listEl = document.getElementById("sk-list");
     const AC = window.AudioContext || window.webkitAudioContext;
 
     let tracks = [];
@@ -212,7 +214,12 @@
       if (el) tracks = (JSON.parse(el.textContent) || []).filter((t) => t && t.src);
     } catch (e) {}
 
-    if (!tracks.length) { btn.remove(); return; }
+    if (!tracks.length) {
+      if (shell) shell.remove();
+      if (listEl) listEl.remove();
+      return;
+    }
+    if (tracks.length < 2 && shell) shell.classList.add("sk-solo");
 
     const LEVEL = 0.6; // ceiling volume
     const ENV_HZ = 10; // envelope samples per second
@@ -289,6 +296,8 @@
         });
         navigator.mediaSession.setActionHandler("play", play);
         navigator.mediaSession.setActionHandler("pause", stop);
+        navigator.mediaSession.setActionHandler("previoustrack", tracks.length > 1 ? () => skip(-1) : null);
+        navigator.mediaSession.setActionHandler("nexttrack", tracks.length > 1 ? () => skip(1) : null);
       } catch (e) {}
     }
 
@@ -323,9 +332,15 @@
       });
     }
 
+    function setPlayingUI(on) {
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      if (shell) shell.classList.toggle("is-playing", on);
+    }
+
     function playIndex(i) {
       setTitle(tracks[i].title);
       mediaSession(tracks[i].title);
+      markList();
       return load(tracks[i].src).then((entry) => {
         if (!playing) return;
         if (!audio) audio = new Audio();
@@ -351,7 +366,7 @@
 
     function play() {
       playing = true;
-      btn.setAttribute("aria-pressed", "true");
+      setPlayingUI(true);
       try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
       // resume the paused element if it already holds this track
       if (audio && audio.src && audio.paused) {
@@ -363,18 +378,68 @@
       if (audio && !audio.paused) return Promise.resolve();
       return playIndex(idx).catch(() => {
         playing = false;
-        btn.setAttribute("aria-pressed", "false");
+        setPlayingUI(false);
       });
     }
 
     function stop() {
       playing = false;
-      btn.setAttribute("aria-pressed", "false");
+      setPlayingUI(false);
       try { localStorage.setItem("qr_sound", "off"); } catch (e) {}
       if (audio && !audio.paused) {
         fadeTo(0, 1.2);
         setTimeout(() => { if (!playing && audio) try { audio.pause(); } catch (e) {} }, 1350);
       }
+    }
+
+    // Step to a neighboring track (or jump to one from the list); always plays.
+    function skip(d, to) {
+      idx = typeof to === "number" ? to : (idx + d + tracks.length) % tracks.length;
+      playing = true;
+      setPlayingUI(true);
+      try { localStorage.setItem("qr_sound", "on"); } catch (e) {}
+      playIndex(idx).catch(() => {
+        playing = false;
+        setPlayingUI(false);
+      });
+    }
+
+    // The little soundtrack panel: one row per track, the current one lit.
+    function renderList() {
+      if (!listEl) return;
+      listEl.innerHTML = "";
+      tracks.forEach((t, i) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "sk-li";
+        const mark = document.createElement("span");
+        mark.className = "sk-li-mark";
+        const name = document.createElement("span");
+        name.className = "sk-li-title";
+        name.textContent = t.title || "untitled";
+        row.appendChild(mark);
+        row.appendChild(name);
+        row.addEventListener("click", () => skip(0, i));
+        listEl.appendChild(row);
+      });
+      markList();
+    }
+
+    function markList() {
+      if (!listEl) return;
+      Array.prototype.forEach.call(listEl.children, (row, i) => {
+        row.classList.toggle("is-current", i === idx);
+        const mark = row.firstChild;
+        if (!mark) return;
+        if (i === idx) {
+          mark.innerHTML = "";
+          const dot = document.createElement("i");
+          dot.className = "sk-li-dot";
+          mark.appendChild(dot);
+        } else {
+          mark.textContent = String(i + 1).padStart(2, "0");
+        }
+      });
     }
 
     // If autoplay was blocked, retry on the first real interaction.
@@ -389,6 +454,44 @@
     }
 
     btn.addEventListener("click", () => (playing ? stop() : play()));
+
+    const prevBtn = document.getElementById("sk-prev");
+    const nextBtn = document.getElementById("sk-next");
+    const listBtn = document.getElementById("sk-list-btn");
+    if (prevBtn) prevBtn.addEventListener("click", () => skip(-1));
+    if (nextBtn) nextBtn.addEventListener("click", () => skip(1));
+    if (listBtn && listEl) {
+      listBtn.addEventListener("click", () => listEl.classList.toggle("is-open"));
+    }
+    renderList();
+
+    // On touch screens there is no hover: the first tap only opens the
+    // capsule, later taps reach the controls. A tap elsewhere closes it
+    // (and the track list) again.
+    const touchOnly = window.matchMedia && window.matchMedia("(hover: none)").matches;
+    if (touchOnly && shell) {
+      shell.addEventListener(
+        "click",
+        (e) => {
+          if (!shell.classList.contains("is-open")) {
+            e.preventDefault();
+            e.stopPropagation();
+            shell.classList.add("is-open");
+          }
+        },
+        true
+      );
+    }
+    document.addEventListener("pointerdown", (e) => {
+      const inShell = shell && shell.contains(e.target);
+      const inList = listEl && listEl.contains(e.target);
+      if (listEl && listEl.classList.contains("is-open") && !inList && e.target !== listBtn && !(listBtn && listBtn.contains(e.target))) {
+        listEl.classList.remove("is-open");
+      }
+      if (shell && shell.classList.contains("is-open") && !inShell && !inList) {
+        shell.classList.remove("is-open");
+      }
+    });
 
     // Measure/animate the server-rendered first title.
     setTitle(tracks[0].title);
