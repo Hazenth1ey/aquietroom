@@ -73,19 +73,29 @@
     </svg>
   </button>
 
-  <button id="sound-toggle" class="skiper-toggle" aria-pressed="false" aria-label="Toggle ambient sound" title="Ambient sound">
-    <span class="sk-reveal" aria-hidden="true">
+  <div id="sound-shell" class="skiper-toggle" aria-label="Ambient sound player">
+    <span class="sk-reveal">
+      <button type="button" class="sk-mini" id="sk-list-btn" aria-label="Track list" title="Track list">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="13" y2="17"/></svg>
+      </button>
+      <button type="button" class="sk-mini" id="sk-prev" aria-label="Previous track" title="Previous track">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 5l-8 7 8 7"/><line x1="6.5" y1="5" x2="6.5" y2="19"/></svg>
+      </button>
       <span class="sk-title-wrap">
         <span class="sk-ticker" id="sk-ticker">
           <span class="sk-title" id="sk-title">{{ soundtrack.tracks[0].title if soundtrack.tracks and soundtrack.tracks.length else "ambient" }}</span>
         </span>
       </span>
+      <button type="button" class="sk-mini" id="sk-next" aria-label="Next track" title="Next track">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5l8 7-8 7"/><line x1="17.5" y1="5" x2="17.5" y2="19"/></svg>
+      </button>
     </span>
-    <span class="sk-knob" aria-hidden="true">
-      <svg class="sk-play" viewBox="-1 0 12 14" xmlns="http://www.w3.org/2000/svg"><path d="M0.9375 13.2422C1.25 13.2422 1.51562 13.1172 1.82812 12.9375L10.9375 7.67188C11.5859 7.28906 11.8125 7.03906 11.8125 6.625C11.8125 6.21094 11.5859 5.96094 10.9375 5.58594L1.82812 0.3125C1.51562 0.132812 1.25 0.015625 0.9375 0.015625C0.359375 0.015625 0 0.453125 0 1.13281V12.1172C0 12.7969 0.359375 13.2422 0.9375 13.2422Z"/></svg>
-      <span class="sk-eq"><i></i><i></i><i></i></span>
-    </span>
-  </button>
+    <button type="button" id="sound-toggle" class="sk-knob" aria-pressed="false" aria-label="Play or pause ambient sound" title="Ambient sound">
+      <svg class="sk-play" viewBox="-1 0 12 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.9375 13.2422C1.25 13.2422 1.51562 13.1172 1.82812 12.9375L10.9375 7.67188C11.5859 7.28906 11.8125 7.03906 11.8125 6.625C11.8125 6.21094 11.5859 5.96094 10.9375 5.58594L1.82812 0.3125C1.51562 0.132812 1.25 0.015625 0.9375 0.015625C0.359375 0.015625 0 0.453125 0 1.13281V12.1172C0 12.7969 0.359375 13.2422 0.9375 13.2422Z"/></svg>
+      <span class="sk-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+    </button>
+  </div>
+  <div id="sk-list" class="sk-list" aria-label="Soundtrack"></div>
 
   <script id="soundtrack" type="application/json">{{ soundtrack.tracks | dump | safe }}</script>
   <script src="/js/main.js?v={{ assetVersion }}"></script>
