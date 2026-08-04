@@ -900,12 +900,86 @@
     }
   }
 
-  // Generic upload (shared by cover + image blocks): returns /uploads/… url.
+  /* ---------------- image optimization ----------------
+     Camera and AI images arrive as multi-MB files. Before anything is
+     committed to the repo it is decoded, downscaled to a sane edge and
+     re-encoded — WebP where the browser can write it, JPEG/PNG where it
+     can't. SVGs and GIFs pass through untouched, and if the "optimized"
+     file somehow comes out bigger, the original wins. */
+  const IMG_MAX_EDGE = 1600; // photos, covers, gallery pieces
+  const LOGO_MAX_EDGE = 512; // brand marks never need more
+
+  function fmtSize(n) {
+    return n >= 1048576
+      ? (n / 1048576).toFixed(1) + " MB"
+      : Math.max(1, Math.round(n / 1024)) + " KB";
+  }
+
+  function canvasBlob(canvas, type, quality) {
+    return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  }
+
+  async function optimizeImage(file, kind) {
+    if (!/^image\//.test(file.type)) return { file: file };
+    if (file.type === "image/svg+xml" || file.type === "image/gif") return { file: file };
+    try {
+      let bmp;
+      if (window.createImageBitmap) {
+        bmp = await createImageBitmap(file);
+      } else {
+        bmp = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = URL.createObjectURL(file);
+        });
+      }
+      const w = bmp.width || bmp.naturalWidth;
+      const h = bmp.height || bmp.naturalHeight;
+      if (!w || !h) return { file: file };
+      const maxEdge = kind === "logo" ? LOGO_MAX_EDGE : IMG_MAX_EDGE;
+      const k = Math.min(1, maxEdge / Math.max(w, h));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(w * k));
+      canvas.height = Math.max(1, Math.round(h * k));
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      if (bmp.close) bmp.close();
+
+      let out = await canvasBlob(canvas, "image/webp", 0.82);
+      if (!out || out.type !== "image/webp") {
+        // no WebP encoder here (older Safari): keep alpha in PNG, else JPEG
+        const keepAlpha = file.type === "image/png" || file.type === "image/webp";
+        out = keepAlpha
+          ? await canvasBlob(canvas, "image/png")
+          : await canvasBlob(canvas, "image/jpeg", 0.85);
+      }
+      if (!out || (k >= 1 && out.size >= file.size)) return { file: file };
+      const ext = out.type === "image/webp" ? "webp" : out.type === "image/png" ? "png" : "jpg";
+      return { file: out, ext: ext, note: ` · ${fmtSize(file.size)} → ${fmtSize(out.size)}` };
+    } catch (e) {
+      return { file: file }; // never let optimization block an upload
+    }
+  }
+  window.__qrOptimize = optimizeImage; // reachable from the console for checks
+
+  // Generic upload (covers, image blocks, galleries, logos, editor images):
+  // images are optimized first; returns a /uploads/… url.
   async function uploadAsset(file, kind) {
     try {
+      const rawName = file.name || "image";
+      let ext = (rawName.split(".").pop() || "bin").toLowerCase();
+      let note = "";
+      if (/^image\//.test(file.type || "")) {
+        setStatus("Optimizing…");
+        const opt = await optimizeImage(file, kind);
+        file = opt.file;
+        if (opt.ext) ext = opt.ext;
+        if (opt.note) note = opt.note;
+      }
       setStatus("Uploading…");
-      const ext = (file.name.split(".").pop() || "bin").toLowerCase();
-      const base = slugify(file.name.replace(/\.[^.]+$/, ""));
+      const base = slugify(rawName.replace(/\.[^.]+$/, "")) || "image";
       const name = `${Date.now()}-${base}.${ext}`;
       const path = `${CONFIG.uploadsDir}/${name}`;
       const b64 = await fileToB64(file);
@@ -917,7 +991,7 @@
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || "Upload failed.");
       }
-      setStatus("Uploaded", "ok");
+      setStatus("Uploaded" + note, "ok");
       return `/uploads/${name}`;
     } catch (e) {
       setStatus("");
@@ -1119,33 +1193,11 @@
   }
 
   async function uploadCover(file) {
-    try {
-      setStatus("Uploading image…");
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const base = slugify(file.name.replace(/\.[^.]+$/, ""));
-      const name = `${Date.now()}-${base}.${ext}`;
-      const path = `${CONFIG.uploadsDir}/${name}`;
-      const b64 = await fileToB64(file);
-      const res = await gh(`/repos/${CONFIG.repo}/contents/${path}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          message: `Upload image ${name}`,
-          content: b64,
-          branch: CONFIG.branch,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Image upload failed.");
-      }
-      state.cover = `/uploads/${name}`;
-      setCoverPreview(state.cover);
-      setStatus("Image added", "ok");
-      toast("Cover image uploaded.");
-    } catch (e) {
-      setStatus("");
-      toast(e.message, true);
-    }
+    const url = await uploadAsset(file, "cover");
+    if (!url) return;
+    state.cover = url;
+    setCoverPreview(url);
+    toast("Cover image uploaded.");
   }
 
   /* ---------------- list ---------------- */
@@ -1246,6 +1298,15 @@
         ["link", "image"],
         ["code", "codeblock"],
       ],
+      // Editor images would otherwise be embedded as huge base64 strings
+      // inside the markdown — route them through the optimizing uploader.
+      hooks: {
+        addImageBlobHook: (blob, callback) => {
+          uploadAsset(blob, "image").then((url) => {
+            if (url) callback(url, blob.name || "image");
+          });
+        },
+      },
     };
     if (currentTheme() === "dark") opts.theme = "dark";
     state.editor = new window.toastui.Editor(opts);
