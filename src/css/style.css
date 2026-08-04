@@ -144,11 +144,11 @@ body {
   pointer-events: none;
 }
 
-/* Day/night toggle — a small circle resting above the sound capsule */
+/* Day/night toggle — a small circle in the top-right corner */
 .site-theme-toggle {
   position: fixed;
   right: 1.35rem;
-  bottom: calc(1.35rem + 52px + 0.75rem);
+  top: 1.35rem;
   z-index: 6;
   width: 52px;
   height: 52px;
@@ -392,6 +392,10 @@ body::before {
   margin: 0 auto;
   padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1.5rem, 5vw, 2rem) 0;
   flex-wrap: wrap;
+}
+/* keep the nav clear of the fixed day/night circle once the column meets the corner */
+@media (max-width: 1080px) {
+  .site-head { padding-right: calc(52px + 2.1rem); }
 }
 
 .site-head a { text-decoration: none; }
