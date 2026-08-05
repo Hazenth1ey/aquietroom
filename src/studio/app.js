@@ -15,6 +15,7 @@
     soundtrackPath: "src/_data/soundtrack.json",
     pagesPath: "src/_data/sitepages.json",
     aboutPath: "src/_data/about.json",
+    journalPath: "src/_data/journal.json",
     projectsPath: "src/_data/projects.json",
     sitePath: "src/_data/site.json",
     authBase: "https://aquietroom-auth.ivankolly.workers.dev",
@@ -378,7 +379,7 @@
 
     // Core pages — always present, editable, never deletable.
     const CORE = [
-      { key: "journal", title: "Journal", meta: "/journal/ · entries live in My content" },
+      { key: "journal", title: "Journal", meta: "/journal/ · page header — entries live in My content" },
       { key: "projects", title: "Projects", meta: "/projects/ · intro + project cards" },
       { key: "about", title: "About", meta: "/about/ · who keeps this room" },
       { key: "site", title: "Site identity", meta: "browser-tab icon · studio logo" },
@@ -389,10 +390,7 @@
       row.innerHTML =
         `<div class="pr-main"><h4>${c.title}<span class="badge">core</span></h4>` +
         `<div class="pr-meta">${c.meta}</div></div>`;
-      row.querySelector(".pr-main").addEventListener("click", () => {
-        if (c.key === "journal") switchView("list");
-        else openCore(c.key);
-      });
+      row.querySelector(".pr-main").addEventListener("click", () => openCore(c.key));
       box.appendChild(row);
     });
 
@@ -538,15 +536,21 @@
     const path =
       kind === "about" ? CONFIG.aboutPath
       : kind === "site" ? CONFIG.sitePath
+      : kind === "journal" ? CONFIG.journalPath
       : CONFIG.projectsPath;
     try {
       const sha = await shaOf(path);
-      const { raw } = await getFile(path);
       core.kind = kind;
       core.sha = sha;
-      core.data = JSON.parse(raw || "{}");
+      if (sha) {
+        const { raw } = await getFile(path);
+        core.data = JSON.parse(raw || "{}");
+      } else {
+        core.data = {};
+      }
       if (kind === "about") renderCoreAbout();
       else if (kind === "site") renderCoreSite();
+      else if (kind === "journal") renderCoreJournal();
       else renderCoreProjects();
     } catch (e) {
       box.innerHTML = `<div class="card"><p class="muted">${escapeHtml(e.message)}</p></div>`;
@@ -645,6 +649,27 @@
     }
     renderLinks();
     coreShell("About page", body);
+  }
+
+  function renderCoreJournal() {
+    const d = core.data;
+    const body = document.createElement("div");
+    body.appendChild(blockField("Eyebrow (small label)", d.eyebrow, (v) => (d.eyebrow = v)));
+    body.appendChild(blockField("Heading", d.heading, (v) => (d.heading = v)));
+    body.appendChild(blockField("Lede (opening line)", d.lede, (v) => (d.lede = v), true));
+
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.style.margin = "0.4rem 0 0.9rem";
+    note.textContent = "This is the journal page's header. The entries below it are written in the studio:";
+    body.appendChild(note);
+    const jump = document.createElement("button");
+    jump.className = "btn btn-soft";
+    jump.textContent = "▤ Open My content";
+    jump.addEventListener("click", () => switchView("list"));
+    body.appendChild(jump);
+
+    coreShell("Journal page", body);
   }
 
   // Reusable image-set editor: thumbnails + captions + reorder + multi-upload.
@@ -879,10 +904,12 @@
     const path =
       core.kind === "about" ? CONFIG.aboutPath
       : core.kind === "site" ? CONFIG.sitePath
+      : core.kind === "journal" ? CONFIG.journalPath
       : CONFIG.projectsPath;
     const label =
       core.kind === "about" ? "About"
       : core.kind === "site" ? "Site identity"
+      : core.kind === "journal" ? "Journal"
       : "Projects";
     try {
       setStatus("Publishing…");
