@@ -1387,12 +1387,33 @@
     }
   }
 
+  // If the editor library is missing (blocked script, broken cache), fall
+  // back to a plain markdown textarea so writing is never impossible.
+  function fallbackEditor(el, initialMd) {
+    const ta = document.createElement("textarea");
+    ta.className = "editor-fallback";
+    ta.placeholder = "Write in Markdown…";
+    ta.value = initialMd || "";
+    el.appendChild(ta);
+    return {
+      getMarkdown: () => ta.value,
+      setMarkdown: (v) => { ta.value = v == null ? "" : v; },
+      setHeight: (h) => { ta.style.height = h; },
+      destroy: () => { el.innerHTML = ""; },
+    };
+  }
+
   // (Re)create the Toast UI editor in the active theme, preserving content.
   function buildEditor(initialMd) {
     if (state.editor) {
       try { state.editor.destroy(); } catch (e) {}
       state.editor = null;
       $("#editor").innerHTML = "";
+    }
+    if (!(window.toastui && window.toastui.Editor)) {
+      state.editor = fallbackEditor($("#editor"), initialMd);
+      state.editor.setHeight(editorHeight());
+      return;
     }
     const opts = {
       el: $("#editor"),
