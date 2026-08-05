@@ -240,6 +240,8 @@ input, button, textarea { font-family: inherit; }
 .input-title, .input-sub {
   display: block; width: 100%; border: none; background: transparent;
   color: var(--ink); padding: 0.4rem 0; margin-bottom: 0.4rem;
+  /* these are auto-growing textareas: long lines wrap instead of hiding */
+  resize: none; overflow: hidden; font-family: var(--sans); line-height: 1.45;
 }
 .input-title { font-family: var(--serif); font-size: 2.15rem; font-weight: 400; letter-spacing: 0.01em; }
 .input-title::placeholder { color: var(--ink-faint); }
