@@ -248,6 +248,19 @@ input, button, textarea { font-family: inherit; }
 .input-title:focus, .input-sub:focus { outline: none; }
 .input-sub:focus { border-color: var(--line-2); }
 #editor { margin-top: 1.1rem; }
+/* plain-markdown fallback shown if the editor library can't load */
+.editor-fallback {
+  width: 100%;
+  min-height: 320px;
+  resize: vertical;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  color: var(--ink);
+  font: 400 0.95rem/1.7 var(--sans, Inter, sans-serif);
+}
+.editor-fallback:focus { outline: none; border-color: var(--line-2); }
 
 /* ---------- organize panel ---------- */
 .organize { display: flex; flex-direction: column; gap: 1.3rem; position: sticky; top: 6rem; }
