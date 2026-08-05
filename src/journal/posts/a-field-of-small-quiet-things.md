@@ -1,9 +1,10 @@
 ---
 title: A field of small quiet things
-date: 2026-07-10
+date: '2026-07-10'
 description: On paying attention to the ordinary — and letting it be enough.
 lede: The day is made mostly of things too small to notice. So I've been trying to notice them.
 ---
+
 A cup going cold. The particular grey of an afternoon before rain. The sound of
 a room settling when everyone has left it. None of these are events. They won't
 make it into any story I tell later. And yet they're where most of a life
