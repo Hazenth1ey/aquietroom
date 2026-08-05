@@ -240,7 +240,7 @@
       : name === "sound" ? "Soundtrack"
       : name === "pages" ? "Pages"
       : "Write";
-    if (name === "write") resizeEditor();
+    if (name === "write") { resizeEditor(); syncFieldHeights(); }
     if (name === "list") renderList();
     if (name === "sound") loadSoundtrack();
     if (name === "pages") { showPagesList(); loadPages(); }
@@ -1118,6 +1118,7 @@
     $("#cover-clear").hidden = true;
     $("#delete-btn").hidden = true;
     if (state.editor) state.editor.setMarkdown("");
+    syncFieldHeights();
     setStatus("");
   }
 
@@ -1144,6 +1145,7 @@
       setCoverPreview(state.cover);
       $("#delete-btn").hidden = false;
       state.editor.setMarkdown(body.trim());
+      syncFieldHeights();
       markCleanDraft();
       setStatus("");
       switchView("write");
@@ -1154,10 +1156,11 @@
 
   function collect() {
     const tags = $("#f-tags").value.split(",").map((t) => t.trim()).filter(Boolean);
+    const line = (v) => v.replace(/\s*\n\s*/g, " ").trim(); // pasted newlines flatten
     return {
-      title: $("#f-title").value.trim(),
-      description: $("#f-excerpt").value.trim(),
-      lede: $("#f-lede").value.trim(),
+      title: line($("#f-title").value),
+      description: line($("#f-excerpt").value),
+      lede: line($("#f-lede").value),
       date: $("#f-date").value || todayISO(),
       tags,
       cover: state.cover,
@@ -1233,6 +1236,7 @@
     setCoverPreview(state.cover);
     $("#delete-btn").hidden = !state.file;
     try { state.editor.setMarkdown(snap.body || ""); } catch (e) {}
+    syncFieldHeights();
     lastDraftJson = JSON.stringify(snap);
     return true;
   }
@@ -1515,7 +1519,40 @@
     }
   }
 
+  /* Title / excerpt / lede are single-value fields rendered as auto-growing
+     textareas, so a long line wraps into view instead of hiding. Enter moves
+     on to the next field — these fields hold no newlines. */
+  const FLOW_FIELDS = ["#f-title", "#f-excerpt", "#f-lede"];
+
+  function growField(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
+  function syncFieldHeights() {
+    FLOW_FIELDS.forEach((sel) => {
+      const el = $(sel);
+      if (el) growField(el);
+    });
+  }
+
+  function wireFlowFields() {
+    FLOW_FIELDS.forEach((sel, i) => {
+      const el = $(sel);
+      if (!el) return;
+      el.addEventListener("input", () => growField(el));
+      el.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+        const next = FLOW_FIELDS[i + 1] && $(FLOW_FIELDS[i + 1]);
+        if (next) next.focus();
+        else if (state.editor && state.editor.focus) { try { state.editor.focus(); } catch (err) {} }
+      });
+    });
+  }
+
   function wire() {
+    wireFlowFields();
     $("#login-btn").addEventListener("click", login);
     $("#logout").addEventListener("click", logout);
     $("#new-btn").addEventListener("click", newEntry);
