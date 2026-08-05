@@ -812,6 +812,8 @@
     if (!data) return;
     const link = document.querySelector('link[rel="icon"]');
     if (link && data.favicon) link.href = data.favicon;
+    const touch = document.querySelector('link[rel="apple-touch-icon"]');
+    if (touch && data.touchIcon) touch.href = data.touchIcon;
     document.querySelectorAll(".brand-mark, .login-mark").forEach((el) => {
       el.innerHTML = data.studioLogo
         ? '<img src="' + data.studioLogo + '" alt="" />'
@@ -824,7 +826,7 @@
     const body = document.createElement("div");
 
     // One reusable section: label + hint + preview + choose/restore.
-    function identSection(labelText, hintText, getUrl, setUrl, restoreText, restoreValue, emptyMark) {
+    function identSection(labelText, hintText, getUrl, setUrl, restoreText, restoreValue, emptyMark, uploadKind) {
       const label = document.createElement("span");
       label.className = "field-label";
       label.textContent = labelText;
@@ -860,7 +862,7 @@
       pick.addEventListener("click", () => file.click());
       file.addEventListener("change", async (e) => {
         if (!e.target.files || !e.target.files[0]) return;
-        const url = await uploadAsset(e.target.files[0], "logo");
+        const url = await uploadAsset(e.target.files[0], uploadKind || "logo");
         if (url) {
           setUrl(url);
           paint();
@@ -895,6 +897,17 @@
       "Restore the ✦ orb",
       "",
       "✦"
+    );
+
+    identSection(
+      "Home Screen icon",
+      "Shown when someone saves the site to their phone's Home Screen. Square image, 360px or larger — the phone rounds the corners itself. Saved as PNG.",
+      () => d.touchIcon,
+      (v) => (d.touchIcon = v),
+      "Restore the glowing star",
+      "",
+      "✦",
+      "icon"
     );
 
     coreShell("Site identity", body);
@@ -965,7 +978,7 @@
       const w = bmp.width || bmp.naturalWidth;
       const h = bmp.height || bmp.naturalHeight;
       if (!w || !h) return { file: file };
-      const maxEdge = kind === "logo" ? LOGO_MAX_EDGE : IMG_MAX_EDGE;
+      const maxEdge = kind === "logo" || kind === "icon" ? LOGO_MAX_EDGE : IMG_MAX_EDGE;
       const k = Math.min(1, maxEdge / Math.max(w, h));
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(w * k));
@@ -975,6 +988,12 @@
       ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
       if (bmp.close) bmp.close();
 
+      // Home Screen icons must stay PNG — iOS won't take WebP there.
+      if (kind === "icon") {
+        const png = await canvasBlob(canvas, "image/png");
+        if (!png || (k >= 1 && png.size >= file.size && file.type === "image/png")) return { file: file };
+        return { file: png, ext: "png", note: ` · ${fmtSize(file.size)} → ${fmtSize(png.size)}` };
+      }
       let out = await canvasBlob(canvas, "image/webp", 0.82);
       if (!out || out.type !== "image/webp") {
         // no WebP encoder here (older Safari): keep alpha in PNG, else JPEG
