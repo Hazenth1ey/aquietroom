@@ -1461,6 +1461,7 @@
       state.editor.setHeight(editorHeight());
       return;
     }
+    const compact = window.matchMedia("(max-width: 760px)").matches;
     const opts = {
       el: $("#editor"),
       height: editorHeight(),
@@ -1469,13 +1470,21 @@
       usageStatistics: false,
       placeholder: "Write…",
       initialValue: initialMd || "",
-      toolbarItems: [
-        ["heading", "bold", "italic", "strike"],
-        ["hr", "quote"],
-        ["ul", "ol"],
-        ["link", "image"],
-        ["code", "codeblock"],
-      ],
+      // phones get the essentials so the toolbar fits one thumb-width
+      toolbarItems: compact
+        ? [
+            ["heading", "bold", "italic"],
+            ["quote"],
+            ["ul", "ol"],
+            ["link", "image"],
+          ]
+        : [
+            ["heading", "bold", "italic", "strike"],
+            ["hr", "quote"],
+            ["ul", "ol"],
+            ["link", "image"],
+            ["code", "codeblock"],
+          ],
       // Editor images would otherwise be embedded as huge base64 strings
       // inside the markdown — route them through the optimizing uploader.
       hooks: {
