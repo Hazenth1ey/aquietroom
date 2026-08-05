@@ -470,6 +470,15 @@ input, button, textarea { font-family: inherit; }
 @media (max-width: 760px) {
   .app { display: block; }
 
+  /* Nothing may widen the layout viewport: a single overflowing element
+     (e.g. the editor toolbar) makes mobile browsers zoom the page out,
+     shrinking the text and pushing the tab bar off screen. */
+  html, body { overflow-x: hidden; }
+  .editor-col .card { min-width: 0; }
+  .toastui-editor-defaultUI { max-width: 100%; }
+  .toastui-editor-defaultUI-toolbar { flex-wrap: wrap; height: auto !important; padding: 0.25rem 0.4rem !important; }
+  .toastui-editor-toolbar { height: auto !important; }
+
   /* slim top bar: brand · back-to-site · user.
      No backdrop-filter here — it would become the containing block for the
      fixed bottom tab bar and pin it to the wrong place. */
@@ -484,8 +493,10 @@ input, button, textarea { font-family: inherit; }
   }
   .brand { margin: 0; flex: 1; min-width: 0; }
   .brand-mark { width: 32px; height: 32px; border-radius: 9px; font-size: 0.8rem; }
-  .brand-name { font-size: 1rem; gap: 0.2rem; }
-  .nav-back { margin: 0; padding: 0.5rem; border: none; font-size: 0.95rem; }
+  .brand-name { font-size: 0.95rem; gap: 0.15rem; white-space: nowrap; }
+  /* the long back link shrinks to "← room" so the brand keeps one line */
+  .nav-back { margin: 0; padding: 0.5rem 0.4rem; border: none; font-size: 0; }
+  .nav-back::after { content: "← room"; font-size: 0.9rem; }
   .user { margin: 0; padding: 0; border: none; gap: 0.5rem; }
   .user-meta { display: none; }
   .user-avatar { width: 32px; height: 32px; }
@@ -511,8 +522,12 @@ input, button, textarea { font-family: inherit; }
   .nav-item.is-active::before { display: none; }
   .nav-item.is-active { background: rgba(157, 176, 216, 0.14); }
 
-  /* stage + room for the tab bar */
-  .topbar { top: calc(48px + env(safe-area-inset-top, 0px)); padding: 0.8rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+  /* stage + room for the tab bar; the tabs already say where you are,
+     so the crumb goes and the bar stays one row */
+  .topbar { top: calc(48px + env(safe-area-inset-top, 0px)); padding: 0.6rem 1rem; flex-wrap: nowrap; gap: 0.5rem; }
+  .crumb { display: none; }
+  .topbar-actions { width: 100%; justify-content: flex-end; }
+  .save-status { margin-right: auto; }
   .view { padding: 1rem; padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)); }
   .card { padding: 1.15rem; border-radius: 14px; }
 
@@ -525,6 +540,8 @@ input, button, textarea { font-family: inherit; }
 
   .publish-card { position: static; }
   .organize { gap: 1rem; }
+  /* Publish/Save sit right under the editor — no scrolling past Organize */
+  .organize .publish-card { order: -1; }
 
   /* lists: tighter, hide the filename on tracks */
   .post-row { padding: 0.9rem 0.35rem; }
