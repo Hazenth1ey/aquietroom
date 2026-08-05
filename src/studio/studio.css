@@ -405,8 +405,54 @@ input, button, textarea { font-family: inherit; }
 .toastui-editor-dark .toastui-editor-defaultUI-toolbar { background: rgba(18, 18, 28, 0.7) !important; border-bottom: 1px solid var(--line) !important; }
 .toastui-editor-dark .toastui-editor-md-container,
 .toastui-editor-dark .toastui-editor-ww-container { background: rgba(10, 10, 18, 0.5) !important; }
-.toastui-editor-contents { font-family: var(--serif) !important; font-size: 1.2rem !important; line-height: 1.75 !important; color: var(--ink) !important; }
+/* The writing surface reads exactly like a published entry: Inter 300
+   body text, Cormorant serif for headings and quotes — same sizes,
+   spacing and ink tones as .prose on the site. */
+.toastui-editor-contents {
+  font-family: var(--sans) !important;
+  font-weight: 300;
+  font-size: 1.05rem !important;
+  line-height: 1.75 !important;
+  letter-spacing: 0.01em;
+  color: var(--ink-dim) !important;
+}
 .toastui-editor-contents p { color: var(--ink-dim) !important; }
+.toastui-editor-contents p + p { margin-top: 1.25rem; }
+.toastui-editor-contents h1,
+.toastui-editor-contents h2,
+.toastui-editor-contents h3,
+.toastui-editor-contents h4,
+.toastui-editor-contents h5,
+.toastui-editor-contents h6 {
+  font-family: var(--serif) !important;
+  font-weight: 400 !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.005em;
+  color: var(--ink) !important;
+  border-bottom: 0 !important; /* Toast underlines h1/h2 by default */
+}
+.toastui-editor-contents h1 { font-size: 2.3rem !important; margin: 3rem 0 1rem !important; }
+.toastui-editor-contents h2 { font-size: 1.9rem !important; margin: 3rem 0 1rem !important; }
+.toastui-editor-contents h3 { font-size: 1.45rem !important; }
+.toastui-editor-contents a {
+  color: var(--ink) !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid var(--line-2);
+}
+.toastui-editor-contents ul li,
+.toastui-editor-contents ol li { color: var(--ink-dim) !important; }
+.toastui-editor-contents blockquote {
+  border-left: 2px solid var(--line-2) !important;
+  padding-left: 1.5rem !important;
+  margin: 2rem 0 !important;
+}
+.toastui-editor-contents blockquote p {
+  font-family: var(--serif) !important;
+  font-style: italic;
+  font-size: 1.25rem !important;
+  color: var(--ink-dim) !important;
+}
+.toastui-editor-contents hr { border-top: 1px solid var(--line-2) !important; margin: 2rem 0 !important; }
 .toastui-editor-md-preview .toastui-editor-contents { color: var(--ink-dim) !important; }
 .toastui-editor-dark .toastui-editor-md-tab-container { background: rgba(18, 18, 28, 0.5) !important; }
 
