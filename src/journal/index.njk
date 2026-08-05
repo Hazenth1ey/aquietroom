@@ -6,10 +6,10 @@ ogTitle: "journal — a quiet room"
 description: "Notes, thoughts, and journal entries from a quiet room."
 ---
 <main class="wrap">
-  <p class="eyebrow" data-reveal="0">journal</p>
-  <h1 class="title" data-reveal="1" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">from the quiet</h1>
+  <p class="eyebrow" data-reveal="0">{{ journal.eyebrow or "journal" }}</p>
+  <h1 class="title" data-reveal="1" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">{{ journal.heading or "from the quiet" }}</h1>
   <p class="lede" data-reveal="2" style="margin-top: 1.5rem;">
-    Thoughts set down before they drift away.
+    {{ journal.lede or "Thoughts set down before they drift away." }}
   </p>
 
   <ul class="entries">
