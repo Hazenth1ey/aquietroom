@@ -239,6 +239,7 @@
       : name === "sound" ? "Soundtrack"
       : name === "pages" ? "Pages"
       : "Write";
+    if (name === "write") resizeEditor();
     if (name === "list") renderList();
     if (name === "sound") loadSoundtrack();
     if (name === "pages") { showPagesList(); loadPages(); }
@@ -1075,6 +1076,7 @@
   }
 
   function newEntry() {
+    clearLocalDraft();
     resetForm();
     switchView("write");
     $("#f-title").focus();
@@ -1096,6 +1098,7 @@
       setCoverPreview(state.cover);
       $("#delete-btn").hidden = false;
       state.editor.setMarkdown(body.trim());
+      markCleanDraft();
       setStatus("");
       switchView("write");
     } catch (e) {
@@ -1114,6 +1117,78 @@
       cover: state.cover,
       body: state.editor.getMarkdown().trim(),
     };
+  }
+
+  /* ---------------- local draft safety net ----------------
+     Whatever is in the write form is mirrored into localStorage every
+     few seconds, so a closed tab, dead battery or stray back-swipe
+     never loses writing. Cleared on publish/save and on "new entry";
+     restored silently the next time the studio opens. */
+  const DRAFT_KEY = "qr_studio_draft";
+  let lastDraftJson = "";
+
+  function draftSnapshot() {
+    if (!state.editor) return null;
+    try {
+      return {
+        file: state.file,
+        title: $("#f-title").value,
+        excerpt: $("#f-excerpt").value,
+        lede: $("#f-lede").value,
+        tags: $("#f-tags").value,
+        date: $("#f-date").value,
+        cover: state.cover,
+        body: state.editor.getMarkdown(),
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function autosaveTick() {
+    if ($("#view-write").hidden) return;
+    const snap = draftSnapshot();
+    if (!snap) return;
+    const json = JSON.stringify(snap);
+    if (json === lastDraftJson) return;
+    lastDraftJson = json;
+    const empty = !snap.title && !snap.body.trim() && !snap.excerpt && !snap.lede && !snap.cover;
+    try {
+      if (empty) localStorage.removeItem(DRAFT_KEY);
+      else localStorage.setItem(DRAFT_KEY, json);
+    } catch (e) {}
+  }
+
+  function clearLocalDraft() {
+    lastDraftJson = "";
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+  }
+
+  // The form's current content is committed (or freshly opened): drop the
+  // stored draft and baseline the ticker so it only re-arms on a real edit.
+  function markCleanDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    const snap = draftSnapshot();
+    lastDraftJson = snap ? JSON.stringify(snap) : "";
+  }
+
+  function restoreLocalDraft() {
+    let snap = null;
+    try { snap = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
+    if (!snap || (!snap.title && !(snap.body || "").trim())) return false;
+    state.file = snap.file || null;
+    state.sha = null; // looked up fresh at save time, in case it moved on
+    state.cover = snap.cover || "";
+    $("#f-title").value = snap.title || "";
+    $("#f-excerpt").value = snap.excerpt || "";
+    $("#f-lede").value = snap.lede || "";
+    $("#f-tags").value = snap.tags || "";
+    $("#f-date").value = snap.date || todayISO();
+    setCoverPreview(state.cover);
+    $("#delete-btn").hidden = !state.file;
+    try { state.editor.setMarkdown(snap.body || ""); } catch (e) {}
+    lastDraftJson = JSON.stringify(snap);
+    return true;
   }
 
   async function save(isDraft) {
@@ -1147,6 +1222,7 @@
       state.file = path;
       state.sha = res.content && res.content.sha;
       $("#delete-btn").hidden = false;
+      markCleanDraft();
       setStatus(isDraft ? "Draft saved" : "Published", "ok");
       toast(isDraft ? "Draft saved." : "Published — live in about a minute.");
     } catch (e) {
@@ -1201,23 +1277,40 @@
   }
 
   /* ---------------- list ---------------- */
+  // Entry metadata is cached by git sha, so reopening "My content" costs
+  // one listing call — a post's content is only re-fetched when it changed.
+  const META_KEY = "qr_studio_postmeta";
+
   async function renderList() {
     const box = $("#post-list");
     box.innerHTML = '<p class="muted">Loading…</p>';
     try {
       const files = await listFiles();
       if (!files.length) { box.innerHTML = '<p class="muted">No entries yet. Start writing.</p>'; return; }
+      let cache = {};
+      try { cache = JSON.parse(localStorage.getItem(META_KEY) || "{}"); } catch (e) {}
       const entries = await Promise.all(
         files.map(async (f) => {
+          const hit = cache[f.path];
+          if (hit && hit.sha === f.sha) {
+            return { path: f.path, sha: f.sha, title: hit.title, date: hit.date, draft: !!hit.draft };
+          }
           try {
             const { raw } = await getFile(f.path);
             const { data } = parseFrontMatter(raw);
-            return { path: f.path, sha: f.sha, title: data.title || f.name, date: data.date || "", draft: !!data.draft };
+            const iso = data.date instanceof Date ? data.date.toISOString() : String(data.date || "");
+            cache[f.path] = { sha: f.sha, title: data.title || f.name, date: iso.slice(0, 10), draft: !!data.draft };
+            const m = cache[f.path];
+            return { path: f.path, sha: f.sha, title: m.title, date: m.date, draft: m.draft };
           } catch (e) {
             return { path: f.path, sha: f.sha, title: f.name, date: "", draft: false };
           }
         })
       );
+      // keep the cache to files that still exist
+      const live = {};
+      files.forEach((f) => { if (cache[f.path]) live[f.path] = cache[f.path]; });
+      try { localStorage.setItem(META_KEY, JSON.stringify(live)); } catch (e) {}
       entries.sort((a, b) => String(b.date).localeCompare(String(a.date)));
       box.innerHTML = "";
       entries.forEach((e) => {
@@ -1268,12 +1361,30 @@
 
     if (!state.editor) buildEditor("");
     resetForm();
+    if (restoreLocalDraft()) toast("Unsaved writing restored.");
+    if (!state.autosaveTimer) state.autosaveTimer = setInterval(autosaveTick, 2500);
     switchView("write");
   }
 
   /* ---------------- theme ---------------- */
   function currentTheme() {
     return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  }
+
+  // The writing box fills whatever screen it's on instead of a fixed frame:
+  // from the editor's own top edge down to the bottom of the viewport,
+  // minus breathing room (and the tab bar on mobile).
+  function editorHeight() {
+    const el = $("#editor");
+    const top = el ? el.getBoundingClientRect().top : 260;
+    const mobile = window.matchMedia("(max-width: 760px)").matches;
+    return Math.max(340, window.innerHeight - top - (mobile ? 92 : 36)) + "px";
+  }
+
+  function resizeEditor() {
+    if (state.editor && !$("#view-write").hidden) {
+      try { state.editor.setHeight(editorHeight()); } catch (e) {}
+    }
   }
 
   // (Re)create the Toast UI editor in the active theme, preserving content.
@@ -1285,7 +1396,7 @@
     }
     const opts = {
       el: $("#editor"),
-      height: window.matchMedia("(max-width: 760px)").matches ? "400px" : "520px",
+      height: editorHeight(),
       initialEditType: "wysiwyg",
       previewStyle: "tab",
       usageStatistics: false,
@@ -1335,6 +1446,11 @@
     document.querySelectorAll("[data-view]").forEach((b) =>
       b.addEventListener("click", () => switchView(b.dataset.view))
     );
+    let rsTimer = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(rsTimer);
+      rsTimer = setTimeout(resizeEditor, 150);
+    });
     $("#publish-btn").addEventListener("click", () => save(false));
     $("#draft-btn").addEventListener("click", () => save(true));
     $("#delete-btn").addEventListener("click", removeEntry);
