@@ -267,6 +267,15 @@
     }
   }
 
+  // Reorder a track and re-render; play order is the list order.
+  function moveTrack(i, d) {
+    const j = i + d;
+    if (j < 0 || j >= state.sound.tracks.length) return;
+    const t = state.sound.tracks.splice(i, 1)[0];
+    state.sound.tracks.splice(j, 0, t);
+    renderTracks();
+  }
+
   function renderTracks() {
     const box = $("#track-list");
     if (!state.sound.tracks.length) {
@@ -274,6 +283,8 @@
       return;
     }
     box.innerHTML = "";
+    const chevron = (dir) =>
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${dir < 0 ? "M5 14.5 12 8l7 6.5" : "M5 9.5 12 16l7-6.5"}"/></svg>`;
     state.sound.tracks.forEach((t, i) => {
       const row = document.createElement("div");
       row.className = "track-row";
@@ -281,10 +292,16 @@
         `<span class="track-ord">${i + 1}</span>` +
         `<input class="track-title" value="${escapeHtml(t.title || "")}" placeholder="Track title" />` +
         `<span class="track-src" title="${escapeHtml(t.src || "")}">${escapeHtml((t.src || "").split("/").pop())}</span>` +
+        `<span class="track-move">` +
+        `<button type="button" class="tr-up" title="Move up" aria-label="Move up"${i === 0 ? " disabled" : ""}>${chevron(-1)}</button>` +
+        `<button type="button" class="tr-down" title="Move down" aria-label="Move down"${i === state.sound.tracks.length - 1 ? " disabled" : ""}>${chevron(1)}</button>` +
+        `</span>` +
         `<button class="pr-del" title="Remove">✕</button>`;
       row.querySelector(".track-title").addEventListener("input", (e) => {
         state.sound.tracks[i].title = e.target.value;
       });
+      row.querySelector(".tr-up").addEventListener("click", () => moveTrack(i, -1));
+      row.querySelector(".tr-down").addEventListener("click", () => moveTrack(i, 1));
       row.querySelector(".pr-del").addEventListener("click", () => {
         state.sound.tracks.splice(i, 1);
         renderTracks();
