@@ -309,6 +309,19 @@ input, button, textarea { font-family: inherit; }
 }
 .track-title:focus { outline: none; border-color: var(--glow); box-shadow: 0 0 0 3px rgba(157, 176, 216, 0.15); }
 .track-src { font-size: 0.72rem; color: var(--ink-faint); max-width: 28%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* reorder chevrons — play order is list order */
+.track-move { display: flex; flex-direction: column; gap: 2px; flex: none; }
+.track-move button {
+  width: 30px; height: 22px; padding: 0; border: 0; border-radius: 7px;
+  background: transparent; color: var(--ink-faint); cursor: pointer;
+  display: grid; place-items: center;
+  transition: color 0.3s var(--ease), background 0.3s var(--ease);
+}
+.track-move button:hover:not(:disabled) { color: var(--ink); background: rgba(157, 176, 216, 0.12); }
+.track-move button:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(157, 176, 216, 0.3); }
+.track-move button:disabled { opacity: 0.25; cursor: default; }
+.track-move svg { width: 13px; height: 13px; display: block; }
+html[data-theme="light"] .track-move button:hover:not(:disabled) { background: rgba(91, 102, 144, 0.12); }
 
 /* ---------- pages (block builder) ---------- */
 .pg-meta { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: flex-end; }
@@ -548,6 +561,7 @@ input, button, textarea { font-family: inherit; }
   /* lists: tighter, hide the filename on tracks */
   .post-row { padding: 0.9rem 0.35rem; }
   .track-src { display: none; }
+  .track-move button { width: 38px; height: 26px; }
   .pr-del { padding: 0.65rem; }
 
   /* login card fills small screens gracefully */
