@@ -1,0 +1,25 @@
+---
+layout: base
+nav: contact
+permalink: /contact/
+seoTitle: "contact — a quiet room"
+ogTitle: "contact — a quiet room"
+description: "A living QR code that leads back to the quiet room."
+---
+<main class="wrap">
+  <p class="eyebrow" data-reveal="0">{{ qrtree.eyebrow or "contact" }}</p>
+  <h1 class="title" data-reveal="1" style="font-size: clamp(2rem, 6vw, 3.25rem); margin-top: 1rem;">{{ qrtree.heading or "a code to keep" }}</h1>
+  <p class="lede" data-reveal="2" style="margin-top: 1.5rem;">
+    {{ qrtree.lede or "A small landscape that folds into a QR code — tap it, scan it, and it finds me." }}
+  </p>
+
+  {% if qrtree and qrtree.settings %}
+  <section class="qrtree qrtree--page" data-reveal="3">
+    <div class="qrtree-frame" data-qrtree></div>
+    <button type="button" class="back qrtree-download" data-qrtree-download>download the flat code</button>
+    <script data-qrtree-config type="application/json">{{ qrtree | dump | safe }}</script>
+  </section>
+  {% endif %}
+
+  <a href="/home/" class="back" data-reveal="4">back to the room</a>
+</main>
