@@ -18,6 +18,7 @@
     journalPath: "src/_data/journal.json",
     projectsPath: "src/_data/projects.json",
     sitePath: "src/_data/site.json",
+    qrtreePath: "src/_data/qrtree.json",
     authBase: "https://aquietroom-auth.ivankolly.workers.dev",
   };
   const TOKEN_KEY = "qr_studio_token";
@@ -241,6 +242,7 @@
       : name === "pages" ? "Pages"
       : "Write";
     if (name === "write") { resizeEditor(); syncFieldHeights(); }
+    if (name !== "pages") killQtPreview();
     if (name === "list") renderList();
     if (name === "sound") loadSoundtrack();
     if (name === "pages") { showPagesList(); loadPages(); }
@@ -363,6 +365,7 @@
   const BLOCK_LABELS = { hero: "Hero", prose: "Prose", image: "Image", quote: "Quote", divider: "Divider" };
 
   function showPagesList() {
+    killQtPreview();
     $("#pages-list-card").hidden = false;
     $("#page-editor").hidden = true;
     $("#core-editor").hidden = true;
@@ -400,6 +403,7 @@
       { key: "projects", title: "Projects", meta: "/projects/ · intro + project cards" },
       { key: "about", title: "About", meta: "/about/ · who keeps this room" },
       { key: "site", title: "Site identity", meta: "browser-tab icon · studio logo" },
+      { key: "qrtree", title: "QR Tree", meta: "contact code · a scannable landscape" },
     ];
     CORE.forEach((c) => {
       const row = document.createElement("div");
@@ -440,6 +444,7 @@
   }
 
   function openPageEditor(index) {
+    killQtPreview();
     state.pages.editing = index;
     state.pages.draft =
       index == null
@@ -545,6 +550,7 @@
   const core = { kind: null, sha: null, data: null };
 
   async function openCore(kind) {
+    killQtPreview();
     const box = $("#core-editor");
     $("#pages-list-card").hidden = true;
     $("#page-editor").hidden = true;
@@ -554,6 +560,7 @@
       kind === "about" ? CONFIG.aboutPath
       : kind === "site" ? CONFIG.sitePath
       : kind === "journal" ? CONFIG.journalPath
+      : kind === "qrtree" ? CONFIG.qrtreePath
       : CONFIG.projectsPath;
     try {
       const sha = await shaOf(path);
@@ -568,6 +575,7 @@
       if (kind === "about") renderCoreAbout();
       else if (kind === "site") renderCoreSite();
       else if (kind === "journal") renderCoreJournal();
+      else if (kind === "qrtree") renderCoreQrtree();
       else renderCoreProjects();
     } catch (e) {
       box.innerHTML = `<div class="card"><p class="muted">${escapeHtml(e.message)}</p></div>`;
@@ -687,6 +695,228 @@
     body.appendChild(jump);
 
     coreShell("Journal page", body);
+  }
+
+  /* ---- QR Tree editor: form generated from the module's SCHEMA ---- */
+  let qtPreview = null, qtLibs = null;
+
+  function killQtPreview() {
+    if (qtPreview) { try { qtPreview.destroy(); } catch (e) {} qtPreview = null; }
+  }
+
+  function loadQtLibs() {
+    if (qtLibs) return qtLibs;
+    const script = (src) => new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+    qtLibs = script("/qr-tree/vendor/qrcode.min.js")
+      .then(() => script("/qr-tree/vendor/three.min.js"))
+      .then(() => script("/qr-tree/qr-tree.js"))
+      .catch((e) => { qtLibs = null; throw e; });
+    return qtLibs;
+  }
+
+  function renderCoreQrtree() {
+    const box = $("#core-editor");
+    box.innerHTML = '<div class="card"><p class="muted">Waking the tree…</p></div>';
+    loadQtLibs().then(buildQrtreeEditor).catch(() => {
+      box.innerHTML = '<div class="card"><p class="muted">The tree’s libraries would not load. Check the connection and try again.</p></div>';
+    });
+  }
+
+  function buildQrtreeEditor() {
+    const QT = window.QRTree;
+    const d = core.data;
+    // a fresh document starts from the night preset — the room's own hour
+    if (!d.settings) { d.settings = { ...QT.PRESETS.night }; d.preset = "night"; }
+    d.settings = { ...QT.PRESETS[d.preset || "night"] || QT.PRESETS.night, ...d.settings };
+    if (!d.link) d.link = "https://vermilionhereafter.com/about/";
+    if (typeof d.seed !== "number") d.seed = 0;
+
+    const body = document.createElement("div");
+    const inputs = {};
+    let rebuildTimer = null;
+
+    // live preview
+    const previewWrap = document.createElement("div");
+    previewWrap.className = "qt-preview";
+    body.appendChild(previewWrap);
+    const previewNote = document.createElement("p");
+    previewNote.className = "muted";
+    previewNote.style.margin = "0.5rem 0 1.4rem";
+    previewNote.textContent = "This is the live tree. Tap it to preview the flattened code.";
+    body.appendChild(previewNote);
+
+    // the link the code points at
+    body.appendChild(blockField("Link (where the code leads)", d.link, (v) => {
+      d.link = v;
+      clearTimeout(rebuildTimer);
+      rebuildTimer = setTimeout(() => qtPreview && qtPreview.update({ link: d.link.trim() || "https://vermilionhereafter.com/about/" }), 350);
+    }));
+
+    // preset chips
+    const presetLabel = document.createElement("span");
+    presetLabel.className = "field-label";
+    presetLabel.textContent = "Start from a season";
+    body.appendChild(presetLabel);
+    const chips = document.createElement("div");
+    chips.className = "qt-chips";
+    Object.entries(QT.PRESETS).forEach(([name, p]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "qt-chip";
+      b.dataset.name = name;
+      b.innerHTML = '<i style="background:' + p.leaf + '"></i>' + name[0].toUpperCase() + name.slice(1);
+      b.addEventListener("click", () => {
+        d.settings = { ...p };
+        d.preset = name;
+        syncControls();
+        markPreset(name);
+        updateContrast();
+        if (qtPreview) qtPreview.update({ settings: d.settings }, true);
+      });
+      chips.appendChild(b);
+    });
+    body.appendChild(chips);
+    function markPreset(name) {
+      Array.prototype.forEach.call(chips.children, (c) => c.classList.toggle("is-on", c.dataset.name === name));
+    }
+
+    // randomizers
+    const rand = document.createElement("div");
+    rand.className = "qt-rand";
+    const shapeBtn = document.createElement("button");
+    shapeBtn.type = "button";
+    shapeBtn.className = "btn btn-soft";
+    shapeBtn.textContent = "New tree shape";
+    shapeBtn.addEventListener("click", () => {
+      d.seed = (d.seed || 0) + 1;
+      d.preset = "custom";
+      markPreset("");
+      if (qtPreview) qtPreview.update({ seed: d.seed });
+    });
+    const palBtn = document.createElement("button");
+    palBtn.type = "button";
+    palBtn.className = "btn btn-soft";
+    palBtn.textContent = "Surprise palette";
+    palBtn.addEventListener("click", () => {
+      Object.assign(d.settings, QT.randomPalette());
+      d.preset = "custom";
+      markPreset("");
+      syncControls();
+      updateContrast();
+      if (qtPreview) qtPreview.update({ settings: d.settings });
+    });
+    rand.appendChild(shapeBtn);
+    rand.appendChild(palBtn);
+    body.appendChild(rand);
+
+    // scannability watch: flat code colour against light tiles
+    const warn = document.createElement("p");
+    warn.className = "qt-warn";
+    warn.hidden = true;
+    body.appendChild(warn);
+    function updateContrast() {
+      const ratio = QT.contrastRatio(d.settings.code, d.settings.light);
+      warn.hidden = ratio >= 3;
+      if (!warn.hidden) {
+        warn.textContent =
+          "Low contrast: the flat code colour and the light tiles are too close (ratio " +
+          ratio.toFixed(1) + ", aim for 3+). Phones may struggle to scan this.";
+      }
+    }
+
+    // the generated control groups, straight from SCHEMA
+    const groups = [...new Set(QT.SCHEMA.map((s) => s.group))];
+    groups.forEach((g, gi) => {
+      const det = document.createElement("details");
+      det.className = "qt-group";
+      if (gi === 0) det.open = true;
+      const sum = document.createElement("summary");
+      sum.textContent = g;
+      det.appendChild(sum);
+      const groupBody = document.createElement("div");
+      groupBody.className = "qt-body";
+      const colorGrid = document.createElement("div");
+      colorGrid.className = "qt-colors";
+      QT.SCHEMA.filter((s) => s.group === g).forEach((s) => {
+        const row = document.createElement("label");
+        row.className = "qt-row qt-" + s.type;
+        let el;
+        if (s.type === "color") {
+          el = document.createElement("input");
+          el.type = "color";
+          row.appendChild(el);
+          row.appendChild(Object.assign(document.createElement("span"), { textContent: s.label }));
+          colorGrid.appendChild(row);
+        } else if (s.type === "range") {
+          el = document.createElement("input");
+          el.type = "range"; el.min = s.min; el.max = s.max; el.step = s.step;
+          const val = document.createElement("em");
+          val.className = "qt-val";
+          const wrap = document.createElement("span");
+          wrap.className = "qt-rangewrap";
+          wrap.appendChild(el); wrap.appendChild(val);
+          row.appendChild(Object.assign(document.createElement("span"), { textContent: s.label }));
+          row.appendChild(wrap);
+          el.addEventListener("input", () => { val.textContent = (+el.value).toFixed(s.step >= 1 ? 0 : 2); });
+          s._val = val;
+          groupBody.appendChild(row);
+        } else if (s.type === "select") {
+          el = document.createElement("select");
+          el.className = "core-select";
+          s.options.forEach((o) => el.appendChild(Object.assign(document.createElement("option"), { value: o, textContent: o })));
+          row.appendChild(Object.assign(document.createElement("span"), { textContent: s.label }));
+          row.appendChild(el);
+          groupBody.appendChild(row);
+        } else if (s.type === "toggle") {
+          el = document.createElement("input");
+          el.type = "checkbox";
+          row.appendChild(Object.assign(document.createElement("span"), { textContent: s.label }));
+          row.appendChild(el);
+          groupBody.appendChild(row);
+        }
+        inputs[s.key] = el;
+        el.addEventListener(s.type === "toggle" ? "change" : "input", () => {
+          d.settings[s.key] =
+            s.type === "range" ? +el.value : s.type === "toggle" ? el.checked : el.value;
+          d.preset = "custom";
+          markPreset("");
+          if (s.key === "code" || s.key === "light") updateContrast();
+          if (!qtPreview) return;
+          if (s.rebuild) {
+            clearTimeout(rebuildTimer);
+            rebuildTimer = setTimeout(() => qtPreview.update({ settings: d.settings }), 80);
+          } else {
+            qtPreview.update({ settings: d.settings });
+          }
+        });
+      });
+      if (colorGrid.children.length) groupBody.prepend(colorGrid);
+      det.appendChild(groupBody);
+      body.appendChild(det);
+    });
+
+    function syncControls() {
+      QT.SCHEMA.forEach((s) => {
+        const el = inputs[s.key];
+        if (!el) return;
+        if (s.type === "toggle") el.checked = !!d.settings[s.key];
+        else {
+          el.value = d.settings[s.key];
+          if (s._val) s._val.textContent = (+d.settings[s.key]).toFixed(s.step >= 1 ? 0 : 2);
+        }
+      });
+    }
+
+    coreShell("QR Tree", body);
+    syncControls();
+    markPreset(d.preset);
+    updateContrast();
+    killQtPreview();
+    qtPreview = window.QRTree.mount(previewWrap, { link: d.link, settings: d.settings, seed: d.seed });
   }
 
   // Reusable image-set editor: thumbnails + captions + reorder + multi-upload.
@@ -935,11 +1165,13 @@
       core.kind === "about" ? CONFIG.aboutPath
       : core.kind === "site" ? CONFIG.sitePath
       : core.kind === "journal" ? CONFIG.journalPath
+      : core.kind === "qrtree" ? CONFIG.qrtreePath
       : CONFIG.projectsPath;
     const label =
       core.kind === "about" ? "About"
       : core.kind === "site" ? "Site identity"
       : core.kind === "journal" ? "Journal"
+      : core.kind === "qrtree" ? "QR Tree"
       : "Projects";
     try {
       setStatus("Publishing…");

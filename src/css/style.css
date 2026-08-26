@@ -932,3 +932,28 @@ a { color: var(--glow); }
 }
 .back:hover { color: var(--glow); }
 .back::before { content: "← "; }
+
+/* ---------------------------------------------------------
+   QR Tree — the contact section's small living code
+   --------------------------------------------------------- */
+.qrtree { margin-top: 4.5rem; }
+.qrtree .eyebrow { margin-bottom: 0.9rem; }
+.qrtree-note { font-size: 0.95rem; color: var(--ink-dim); max-width: 34rem; }
+.qrtree-frame {
+  margin-top: 1.6rem;
+  aspect-ratio: 4 / 3;
+  max-height: 30rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(14, 14, 21, 0.4);
+}
+html[data-theme="light"] .qrtree-frame { background: rgba(255, 255, 255, 0.4); }
+.qrtree-download {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 1.2rem;
+}

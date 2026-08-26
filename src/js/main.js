@@ -517,6 +517,48 @@
     if (entered || wasOn) play();
   }
 
+  /* ---- QR Tree (contact section) ----
+     The scene module and its libraries are heavy, so they load only when a
+     page that carries a [data-qrtree] container appears — on first load or
+     after a router swap (swapped-in <script> tags never execute, so the
+     shell owns mounting). One instance lives at a time. */
+  let qrTreeInstance = null, qrTreeLibs = null;
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  function qrTreeBoot() {
+    if (qrTreeInstance && !document.body.contains(qrTreeInstance.container)) {
+      qrTreeInstance.destroy();
+      qrTreeInstance = null;
+    }
+    const holder = document.querySelector("[data-qrtree]");
+    if (!holder || qrTreeInstance) return;
+    let config = null;
+    try {
+      const el = document.querySelector("[data-qrtree-config]");
+      if (el) config = JSON.parse(el.textContent);
+    } catch (e) {}
+    if (!config || !config.settings) return;
+    if (!qrTreeLibs) {
+      qrTreeLibs = loadScript("/qr-tree/vendor/qrcode.min.js")
+        .then(() => loadScript("/qr-tree/vendor/three.min.js"))
+        .then(() => loadScript("/qr-tree/qr-tree.js"))
+        .catch(() => { qrTreeLibs = null; });
+    }
+    qrTreeLibs.then(() => {
+      if (!window.QRTree || !document.body.contains(holder) || qrTreeInstance) return;
+      qrTreeInstance = QRTree.mount(holder, config);
+      const dl = document.querySelector("[data-qrtree-download]");
+      if (dl) dl.addEventListener("click", () => qrTreeInstance && qrTreeInstance.downloadPNG("a-quiet-room-qr.png"));
+    });
+  }
+
   /* ---- In-place navigation, so the shell (and the music) never reloads ---- */
   function router() {
     if (!window.history || !window.fetch || !window.DOMParser) return;
@@ -565,6 +607,7 @@
 
       reveal();
       setPortalState();
+      qrTreeBoot();
       root.classList.remove("is-navigating");
       busy = false;
     }
@@ -806,5 +849,6 @@
     lightbox();
     themeControl();
     cursorTrail();
+    qrTreeBoot();
   });
 })();
