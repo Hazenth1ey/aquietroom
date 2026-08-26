@@ -28,6 +28,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/admin": "admin" });
   eleventyConfig.addPassthroughCopy({ "src/studio": "studio" });
   eleventyConfig.addPassthroughCopy({ "src/uploads": "uploads" });
+  eleventyConfig.addPassthroughCopy({ "src/qr-tree": "qr-tree" });
 
   // --- Posts collection: exclude drafts, oldest→newest (for prev/next) ---
   eleventyConfig.addCollection("posts", (api) =>

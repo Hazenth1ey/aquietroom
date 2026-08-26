@@ -42,6 +42,16 @@ description: "About the person behind this quiet room."
     </ul>
     {% endif %}
 
+    {% if qrtree and qrtree.settings %}
+    <section class="qrtree" data-reveal="3">
+      <p class="eyebrow">a code to keep</p>
+      <p class="qrtree-note">A small landscape that folds into a QR code — tap it, scan it, and it leads back here.</p>
+      <div class="qrtree-frame" data-qrtree></div>
+      <button type="button" class="back qrtree-download" data-qrtree-download>download the flat code</button>
+      <script data-qrtree-config type="application/json">{{ qrtree | dump | safe }}</script>
+    </section>
+    {% endif %}
+
     <a href="/home/" class="back">back to the room</a>
   </div>
 </main>
