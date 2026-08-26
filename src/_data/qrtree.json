@@ -45,7 +45,7 @@
     "particleStyle": "fireflies"
   },
   "daynight": true,
-  "eyebrow": "contact",
-  "heading": "a code to keep",
+  "eyebrow": "",
+  "heading": "Contact",
   "lede": "A small landscape that folds into a QR code — tap it, scan it, and it finds me."
 }
