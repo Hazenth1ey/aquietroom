@@ -548,7 +548,7 @@
     if (!qrTreeLibs) {
       qrTreeLibs = loadScript("/qr-tree/vendor/lattice.min.js")
         .then(() => loadScript("/qr-tree/vendor/three.min.js"))
-        .then(() => loadScript("/qr-tree/qr-tree.js"))
+        .then(() => loadScript("/qr-tree/qr-tree.js?v=2"))
         .catch(() => { qrTreeLibs = null; });
     }
     qrTreeLibs.then(() => {

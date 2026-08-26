@@ -131,6 +131,30 @@
     };
   }
 
+  // The sky follows the visitor's clock: the composed look holds through the
+  // day, dawn and dusk blush warm, and after sunset the same palette settles
+  // into night — only light-and-sky keys change, never the built scene.
+  function computeTimeLook(S, h) {
+    const mix = (a, b, k) => {
+      k = Math.min(1, Math.max(0, k));
+      return "#" + new THREE.Color(a).lerp(new THREE.Color(b), k).getHexString();
+    };
+    const daylight = (h > 6 && h < 18) ? Math.max(0, Math.sin(Math.PI * (h - 6) / 12)) : 0;
+    const dark = Math.min(1, Math.max(0, 1 - daylight * 1.6));
+    const dusk = Math.exp(-Math.pow((h - 6.3) / 1.1, 2)) + Math.exp(-Math.pow((h - 17.7) / 1.1, 2));
+    return {
+      skyTop: mix(S.skyTop, "#10101f", dark * 0.92),
+      skyBottom: mix(mix(S.skyBottom, "#262644", dark * 0.88), "#e0975f", Math.min(1, dusk) * 0.35 * (1 - dark * 0.5)),
+      ambientSky: mix(S.ambientSky, "#3c3c68", dark * 0.85),
+      ambientGround: mix(S.ambientGround, "#1d1d31", dark * 0.85),
+      sunColor: mix(mix(S.sunColor, "#c8d4ff", dark * 0.8), "#ffb98a", Math.min(1, dusk) * 0.5),
+      sunIntensity: S.sunIntensity * (0.35 + 0.65 * daylight),
+      ambient: S.ambient * (0.55 + 0.45 * daylight),
+      sunHeight: 18 + (S.sunHeight - 18) * daylight,
+      vignette: Math.min(0.4, (S.vignette || 0) + dark * 0.12),
+    };
+  }
+
   /* ---------------- shared styles (injected once) ---------------- */
   function ensureStyle() {
     if (document.getElementById("qrt-style")) return;
@@ -158,6 +182,15 @@
     S.quiet = Math.max(4, S.quiet || 4); // never let the quiet zone shrink below spec
     let link = (config && config.link) || "https://example.com";
     let seedShift = (config && config.seed) || 0;
+    let followClock = !!(config && config.daynight);
+    let hourOverride = null;
+    let EFF = S; // effective look: S, time-shifted when the clock is followed
+    function refreshEff() {
+      if (!followClock) { EFF = S; return; }
+      const now = new Date();
+      const h = hourOverride != null ? hourOverride : now.getHours() + now.getMinutes() / 60;
+      EFF = Object.assign({}, S, computeTimeLook(S, h));
+    }
 
     const stage = document.createElement("div");
     stage.className = "qrt-stage";
@@ -378,14 +411,17 @@
     const stoneCol = new THREE.Color(), codeCol = new THREE.Color(), leafCol = new THREE.Color();
     const tints = [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Color()], tmp = new THREE.Color();
     function applyLook() {
+      refreshEff();
       leafCol.set(S.leaf); codeCol.set(S.code); stoneCol.set(S.stone);
       tints[0].set(S.tint1); tints[1].set(S.tint2); tints[2].set(S.tint3); tints[3].set(S.leaf);
       mat.light.color.set(S.light); trunkCol.set(S.trunk); grassCol.set(S.grass); mat.particle.color.set(S.particle);
-      hemi.color.set(S.ambientSky); hemi.groundColor.set(S.ambientGround); hemi.intensity = S.ambient;
-      sun.color.set(S.sunColor); sun.intensity = S.sunIntensity; sun.castShadow = S.shadows;
-      stage.style.background = "linear-gradient(180deg," + S.skyTop + " 0%," + S.skyBottom + " 78%)";
-      vignette.style.background = "radial-gradient(ellipse at 50% 55%, transparent 55%, rgba(0,0,0," + (S.vignette || 0) + ") 100%)";
-      if (hint) hint.classList.toggle("qrt-dark", relLuminance(S.skyBottom) < 0.35);
+      hemi.color.set(EFF.ambientSky); hemi.groundColor.set(EFF.ambientGround); hemi.intensity = EFF.ambient;
+      sun.color.set(EFF.sunColor); sun.intensity = EFF.sunIntensity; sun.castShadow = S.shadows;
+      stage.style.background = "linear-gradient(180deg," + EFF.skyTop + " 0%," + EFF.skyBottom + " 78%)";
+      vignette.style.background = "radial-gradient(ellipse at 50% 55%, transparent 55%, rgba(0,0,0," + (EFF.vignette || 0) + ") 100%)";
+      const darkSky = relLuminance(EFF.skyBottom) < 0.35;
+      if (hint) hint.classList.toggle("qrt-dark", darkSky);
+      container.classList.toggle("qrt-sky-dark", darkSky);
       if (particleData.length !== ((S.particleStyle === "none") ? 0 : S.particleCount) && !reduceMotion) buildParticles();
       leafDirty = true;
     }
@@ -471,7 +507,8 @@
     }
     function frame(ease, g, sway, wind) {
       placeCamera(ease, sway);
-      const a = S.sunAngle * Math.PI / 180, e = THREE.MathUtils.lerp(S.sunHeight, 88, ease) * Math.PI / 180;
+      const a = (EFF.sunAngle != null ? EFF.sunAngle : S.sunAngle) * Math.PI / 180;
+      const e = THREE.MathUtils.lerp(EFF.sunHeight != null ? EFF.sunHeight : S.sunHeight, 88, ease) * Math.PI / 180;
       sun.position.set(Math.cos(e) * Math.sin(a) * 80, Math.sin(e) * 80, Math.cos(e) * Math.cos(a) * 80);
       if (grassMesh) grassMesh.scale.y = Math.max(0.001, g);
       updateLeaves(ease, g, wind);
@@ -503,6 +540,11 @@
     if (ro) ro.observe(stage);
     else window.addEventListener("resize", fitCamera);
 
+    // the sky keeps time: re-light once a minute while the clock is followed
+    const clockTimer = setInterval(() => { if (followClock && !disposed) applyLook(); }, 60000);
+    function setFollowClock(on) { followClock = !!on; applyLook(); }
+    function setHour(h) { hourOverride = (h == null ? null : +h); applyLook(); }
+
     function downloadPNG(filename) {
       frame(1, 1, 0, 0);
       if (particles) particles.visible = false;
@@ -533,6 +575,7 @@
 
     function destroy() {
       disposed = true;
+      clearInterval(clockTimer);
       cancelAnimationFrame(raf);
       if (ro) ro.disconnect(); else window.removeEventListener("resize", fitCamera);
       stage.removeEventListener("click", onTap);
@@ -544,6 +587,7 @@
     animate();
     return {
       update, setFlat, toggleFlat: onTap, isFlat: () => flatTarget === 1,
+      setFollowClock, setHour,
       downloadPNG, destroy,
       get settings() { return S; }, get container() { return container; },
     };
