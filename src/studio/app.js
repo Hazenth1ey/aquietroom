@@ -714,7 +714,7 @@
     });
     qtLibs = script("/qr-tree/vendor/lattice.min.js")
       .then(() => script("/qr-tree/vendor/three.min.js"))
-      .then(() => script("/qr-tree/qr-tree.js"))
+      .then(() => script("/qr-tree/qr-tree.js?v=2"))
       .catch((e) => { qtLibs = null; throw e; });
     return qtLibs;
   }
@@ -784,6 +784,69 @@
     body.appendChild(blockField("Page eyebrow (small label)", d.eyebrow, (v) => (d.eyebrow = v)));
     body.appendChild(blockField("Page heading", d.heading, (v) => (d.heading = v)));
     body.appendChild(blockField("Page lede (opening line)", d.lede, (v) => (d.lede = v), true));
+
+    // the sky can keep the visitor's time: day holds your look, night falls after sunset
+    if (typeof d.daynight === "undefined") d.daynight = true;
+    const dnField = document.createElement("div");
+    dnField.className = "field";
+    const dnLabel = document.createElement("span");
+    dnLabel.textContent = "Real-time sky";
+    dnField.appendChild(dnLabel);
+    const dnCheck = document.createElement("label");
+    dnCheck.className = "check";
+    const dnBox = document.createElement("input");
+    dnBox.type = "checkbox";
+    dnBox.checked = !!d.daynight;
+    dnCheck.appendChild(dnBox);
+    dnCheck.appendChild(document.createTextNode(" follow the visitor's clock — dusk warms, night falls"));
+    dnField.appendChild(dnCheck);
+    body.appendChild(dnField);
+
+    const hourField = document.createElement("div");
+    hourField.className = "field";
+    hourField.hidden = !d.daynight;
+    const hourLabel = document.createElement("span");
+    hourLabel.textContent = "Preview an hour (studio only — visitors get their own time)";
+    hourField.appendChild(hourLabel);
+    const hourWrap = document.createElement("span");
+    hourWrap.className = "qt-rangewrap";
+    const hourInput = document.createElement("input");
+    hourInput.type = "range";
+    hourInput.min = 0; hourInput.max = 23.5; hourInput.step = 0.5;
+    const nowH = new Date().getHours() + (new Date().getMinutes() >= 30 ? 0.5 : 0);
+    hourInput.value = nowH;
+    const hourVal = document.createElement("em");
+    hourVal.className = "qt-val";
+    const fmtH = (v) => String(Math.floor(v)).padStart(2, "0") + (v % 1 ? ":30" : ":00");
+    hourVal.textContent = fmtH(nowH);
+    const hourNow = document.createElement("button");
+    hourNow.type = "button";
+    hourNow.className = "btn btn-link";
+    hourNow.textContent = "now";
+    hourInput.addEventListener("input", () => {
+      hourVal.textContent = fmtH(+hourInput.value);
+      if (qtPreview) qtPreview.setHour(+hourInput.value);
+    });
+    hourNow.addEventListener("click", () => {
+      const h = new Date().getHours() + (new Date().getMinutes() >= 30 ? 0.5 : 0);
+      hourInput.value = h;
+      hourVal.textContent = fmtH(h);
+      if (qtPreview) qtPreview.setHour(null);
+    });
+    hourWrap.appendChild(hourInput);
+    hourWrap.appendChild(hourVal);
+    hourWrap.appendChild(hourNow);
+    hourField.appendChild(hourWrap);
+    body.appendChild(hourField);
+
+    dnBox.addEventListener("change", () => {
+      d.daynight = dnBox.checked;
+      hourField.hidden = !d.daynight;
+      if (qtPreview) {
+        qtPreview.setFollowClock(d.daynight);
+        if (!d.daynight) qtPreview.setHour(null);
+      }
+    });
 
     // preset chips
     const presetLabel = document.createElement("span");
@@ -972,7 +1035,7 @@
     markPreset(d.preset);
     updateContrast();
     killQtPreview();
-    qtPreview = window.QRTree.mount(previewWrap, { link: d.link, settings: d.settings, seed: d.seed });
+    qtPreview = window.QRTree.mount(previewWrap, { link: d.link, settings: d.settings, seed: d.seed, daynight: d.daynight });
   }
 
   // Reusable image-set editor: thumbnails + captions + reorder + multi-upload.
