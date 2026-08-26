@@ -546,13 +546,22 @@
     } catch (e) {}
     if (!config || !config.settings) return;
     if (!qrTreeLibs) {
-      qrTreeLibs = loadScript("/qr-tree/vendor/qrcode.min.js")
+      qrTreeLibs = loadScript("/qr-tree/vendor/lattice.min.js")
         .then(() => loadScript("/qr-tree/vendor/three.min.js"))
         .then(() => loadScript("/qr-tree/qr-tree.js"))
         .catch(() => { qrTreeLibs = null; });
     }
     qrTreeLibs.then(() => {
-      if (!window.QRTree || !document.body.contains(holder) || qrTreeInstance) return;
+      if (!document.body.contains(holder) || qrTreeInstance) return;
+      if (!window.QRTree) {
+        // a blocker or outage kept the scene away — leave a way in, not a void
+        holder.innerHTML =
+          '<p class="qrtree-fallback">The living code couldn’t load here — ' +
+          '<a href="' + String(config.link || "/about/").replace(/"/g, "&quot;") + '">this way instead</a>.</p>';
+        const dlBtn = document.querySelector("[data-qrtree-download]");
+        if (dlBtn) dlBtn.hidden = true;
+        return;
+      }
       qrTreeInstance = QRTree.mount(holder, config);
       const dl = document.querySelector("[data-qrtree-download]");
       if (dl) dl.addEventListener("click", () => qrTreeInstance && qrTreeInstance.downloadPNG("a-quiet-room-qr.png"));

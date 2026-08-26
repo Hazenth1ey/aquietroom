@@ -957,3 +957,11 @@ html[data-theme="light"] .qrtree-frame { background: rgba(255, 255, 255, 0.4); }
   font-family: inherit;
   margin-top: 1.2rem;
 }
+.qrtree--page { margin-top: 3rem; max-width: 100%; }
+.qrtree--page .qrtree-frame { margin-top: 0; max-height: 34rem; }
+.qrtree-fallback {
+  display: grid; place-items: center; height: 100%;
+  padding: 2rem; text-align: center;
+  font-size: 0.9rem; color: var(--ink-dim);
+}
+.qrtree-fallback a { color: var(--glow); }

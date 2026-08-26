@@ -23,7 +23,7 @@
   };
   const TOKEN_KEY = "qr_studio_token";
   // slugs the site already owns — a page can't take these addresses
-  const RESERVED_SLUGS = ["home", "journal", "projects", "about", "studio", "admin", "css", "js", "audio", "uploads", "feed.xml", "sitemap.xml", "404"];
+  const RESERVED_SLUGS = ["home", "journal", "projects", "about", "contact", "qr-tree", "studio", "admin", "css", "js", "audio", "uploads", "feed.xml", "sitemap.xml", "404"];
 
   const state = {
     token: null, file: null, sha: null, cover: "", editor: null,
@@ -236,16 +236,19 @@
     $("#view-list").hidden = name !== "list";
     $("#view-sound").hidden = name !== "sound";
     $("#view-pages").hidden = name !== "pages";
+    $("#view-qrtree").hidden = name !== "qrtree";
     $("#crumb").textContent =
       name === "list" ? "My content"
       : name === "sound" ? "Soundtrack"
       : name === "pages" ? "Pages"
+      : name === "qrtree" ? "QR Tree"
       : "Write";
     if (name === "write") { resizeEditor(); syncFieldHeights(); }
-    if (name !== "pages") killQtPreview();
+    if (name !== "qrtree") killQtPreview();
     if (name === "list") renderList();
     if (name === "sound") loadSoundtrack();
     if (name === "pages") { showPagesList(); loadPages(); }
+    if (name === "qrtree") loadQrtreeTab();
   }
 
   /* ---------------- soundtrack ---------------- */
@@ -403,7 +406,6 @@
       { key: "projects", title: "Projects", meta: "/projects/ · intro + project cards" },
       { key: "about", title: "About", meta: "/about/ · who keeps this room" },
       { key: "site", title: "Site identity", meta: "browser-tab icon · studio logo" },
-      { key: "qrtree", title: "QR Tree", meta: "contact code · a scannable landscape" },
     ];
     CORE.forEach((c) => {
       const row = document.createElement("div");
@@ -560,7 +562,6 @@
       kind === "about" ? CONFIG.aboutPath
       : kind === "site" ? CONFIG.sitePath
       : kind === "journal" ? CONFIG.journalPath
-      : kind === "qrtree" ? CONFIG.qrtreePath
       : CONFIG.projectsPath;
     try {
       const sha = await shaOf(path);
@@ -575,7 +576,6 @@
       if (kind === "about") renderCoreAbout();
       else if (kind === "site") renderCoreSite();
       else if (kind === "journal") renderCoreJournal();
-      else if (kind === "qrtree") renderCoreQrtree();
       else renderCoreProjects();
     } catch (e) {
       box.innerHTML = `<div class="card"><p class="muted">${escapeHtml(e.message)}</p></div>`;
@@ -697,8 +697,9 @@
     coreShell("Journal page", body);
   }
 
-  /* ---- QR Tree editor: form generated from the module's SCHEMA ---- */
+  /* ---- QR Tree tab: form generated from the module's SCHEMA ---- */
   let qtPreview = null, qtLibs = null;
+  const qrt = { sha: null, data: null };
 
   function killQtPreview() {
     if (qtPreview) { try { qtPreview.destroy(); } catch (e) {} qtPreview = null; }
@@ -711,24 +712,47 @@
       s.src = src; s.onload = res; s.onerror = rej;
       document.head.appendChild(s);
     });
-    qtLibs = script("/qr-tree/vendor/qrcode.min.js")
+    qtLibs = script("/qr-tree/vendor/lattice.min.js")
       .then(() => script("/qr-tree/vendor/three.min.js"))
       .then(() => script("/qr-tree/qr-tree.js"))
       .catch((e) => { qtLibs = null; throw e; });
     return qtLibs;
   }
 
-  function renderCoreQrtree() {
-    const box = $("#core-editor");
+  async function loadQrtreeTab() {
+    const box = $("#qrtree-editor");
     box.innerHTML = '<div class="card"><p class="muted">Waking the tree…</p></div>';
-    loadQtLibs().then(buildQrtreeEditor).catch(() => {
-      box.innerHTML = '<div class="card"><p class="muted">The tree’s libraries would not load. Check the connection and try again.</p></div>';
-    });
+    try {
+      const sha = await shaOf(CONFIG.qrtreePath);
+      qrt.sha = sha;
+      qrt.data = sha ? JSON.parse((await getFile(CONFIG.qrtreePath)).raw || "{}") : {};
+      await loadQtLibs();
+      buildQrtreeEditor();
+    } catch (e) {
+      box.innerHTML = '<div class="card"><p class="muted">The tree would not wake: ' + escapeHtml(e.message || "libraries failed to load") + "</p></div>";
+    }
+  }
+
+  async function saveQrtree() {
+    try {
+      setStatus("Publishing…");
+      $("#qrt-save").disabled = true;
+      const res = await putFile(CONFIG.qrtreePath, JSON.stringify(qrt.data, null, 2) + "\n", "Update QR Tree", qrt.sha);
+      qrt.sha = res.content && res.content.sha;
+      setStatus("Published", "ok");
+      toast("QR Tree updated — live at /contact/ in about a minute.");
+    } catch (e) {
+      setStatus("Save failed", "err");
+      toast(e.message, true);
+    } finally {
+      const b = $("#qrt-save");
+      if (b) b.disabled = false;
+    }
   }
 
   function buildQrtreeEditor() {
     const QT = window.QRTree;
-    const d = core.data;
+    const d = qrt.data;
     // a fresh document starts from the night preset — the room's own hour
     if (!d.settings) { d.settings = { ...QT.PRESETS.night }; d.preset = "night"; }
     d.settings = { ...QT.PRESETS[d.preset || "night"] || QT.PRESETS.night, ...d.settings };
@@ -755,6 +779,11 @@
       clearTimeout(rebuildTimer);
       rebuildTimer = setTimeout(() => qtPreview && qtPreview.update({ link: d.link.trim() || "https://vermilionhereafter.com/about/" }), 350);
     }));
+
+    // the contact page's own words
+    body.appendChild(blockField("Page eyebrow (small label)", d.eyebrow, (v) => (d.eyebrow = v)));
+    body.appendChild(blockField("Page heading", d.heading, (v) => (d.heading = v)));
+    body.appendChild(blockField("Page lede (opening line)", d.lede, (v) => (d.lede = v), true));
 
     // preset chips
     const presetLabel = document.createElement("span");
@@ -911,7 +940,34 @@
       });
     }
 
-    coreShell("QR Tree", body);
+    // assemble the tab: one card of controls, one of actions
+    const box = $("#qrtree-editor");
+    box.innerHTML = "";
+    const card = document.createElement("div");
+    card.className = "card";
+    const head = document.createElement("div");
+    head.className = "list-head";
+    head.innerHTML = '<h3 class="panel-title">QR Tree</h3>';
+    card.appendChild(head);
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.style.margin = "-0.5rem 0 1.25rem";
+    note.textContent = "The living code on /contact/. Shape it here; publish when it feels right.";
+    card.appendChild(note);
+    card.appendChild(body);
+    box.appendChild(card);
+
+    const actions = document.createElement("div");
+    actions.className = "card publish-card";
+    actions.style.marginTop = "1.3rem";
+    const save = document.createElement("button");
+    save.className = "btn btn-primary btn-block";
+    save.id = "qrt-save";
+    save.textContent = "Publish changes";
+    save.addEventListener("click", saveQrtree);
+    actions.appendChild(save);
+    box.appendChild(actions);
+
     syncControls();
     markPreset(d.preset);
     updateContrast();
@@ -1165,13 +1221,11 @@
       core.kind === "about" ? CONFIG.aboutPath
       : core.kind === "site" ? CONFIG.sitePath
       : core.kind === "journal" ? CONFIG.journalPath
-      : core.kind === "qrtree" ? CONFIG.qrtreePath
       : CONFIG.projectsPath;
     const label =
       core.kind === "about" ? "About"
       : core.kind === "site" ? "Site identity"
       : core.kind === "journal" ? "Journal"
-      : core.kind === "qrtree" ? "QR Tree"
       : "Projects";
     try {
       setStatus("Publishing…");
