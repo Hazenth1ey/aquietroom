@@ -44,5 +44,8 @@
     "grassHeight": 0.8,
     "quiet": 4
   },
-  "daynight": true
+  "daynight": true,
+  "eyebrow": "contact",
+  "heading": "a code to keep",
+  "lede": "A small landscape that folds into a QR code — tap it, scan it, and it finds me."
 }

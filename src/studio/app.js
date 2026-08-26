@@ -780,10 +780,22 @@
       rebuildTimer = setTimeout(() => qtPreview && qtPreview.update({ link: d.link.trim() || "https://vermilionhereafter.com/about/" }), 350);
     }));
 
-    // the contact page's own words
-    body.appendChild(blockField("Page eyebrow (small label)", d.eyebrow, (v) => (d.eyebrow = v)));
-    body.appendChild(blockField("Page heading", d.heading, (v) => (d.heading = v)));
-    body.appendChild(blockField("Page lede (opening line)", d.lede, (v) => (d.lede = v), true));
+    // the contact page's own words — shown over the landscape
+    if (!d.eyebrow && d.eyebrow !== "") d.eyebrow = "contact";
+    if (!d.heading && d.heading !== "") d.heading = "a code to keep";
+    if (!d.lede && d.lede !== "") d.lede = "A small landscape that folds into a QR code — tap it, scan it, and it finds me.";
+    const wordsLabel = document.createElement("span");
+    wordsLabel.className = "field-label";
+    wordsLabel.textContent = "The page's words";
+    body.appendChild(wordsLabel);
+    const wordsHint = document.createElement("p");
+    wordsHint.className = "muted";
+    wordsHint.style.margin = "-0.3rem 0 0.9rem";
+    wordsHint.textContent = "The three lines floating over the landscape on /contact/.";
+    body.appendChild(wordsHint);
+    body.appendChild(blockField("Eyebrow (small label)", d.eyebrow, (v) => (d.eyebrow = v)));
+    body.appendChild(blockField("Heading", d.heading, (v) => (d.heading = v)));
+    body.appendChild(blockField("Lede (opening line)", d.lede, (v) => (d.lede = v), true));
 
     // the sky can keep the visitor's time: day holds your look, night falls after sunset
     if (typeof d.daynight === "undefined") d.daynight = true;
