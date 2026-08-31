@@ -228,10 +228,26 @@
 
     // One download per track: bytes become both the playable blob URL and
     // the loudness envelope that drives the stars/EQ.
-    function load(src) {
+    // A partial download that slips through (poisoned HTTP cache, flaky
+    // proxy) plays a few seconds then "ends", making the playlist race
+    // ahead — so short bodies are rejected and refetched past the cache.
+    function grab(url, mode) {
+      return fetch(url, mode ? { cache: mode } : undefined).then((r) => {
+        if (!r.ok) throw new Error("track fetch failed");
+        const expect = r.headers.get("content-encoding")
+          ? 0
+          : +(r.headers.get("content-length") || 0);
+        return r.arrayBuffer().then((ab) => {
+          if (expect && ab.byteLength < expect) throw new Error("incomplete track");
+          return ab;
+        });
+      });
+    }
+    function load(src, bust) {
       if (cache[src]) return Promise.resolve(cache[src]);
-      return fetch(src)
-        .then((r) => r.arrayBuffer())
+      const fresh = () =>
+        grab(src + (src.indexOf("?") >= 0 ? "&" : "?") + "fresh=" + Date.now(), "no-store");
+      return (bust ? fresh() : grab(src).catch(() => grab(src, "reload")))
         .then((ab) => {
           const entry = (cache[src] = {
             url: URL.createObjectURL(new Blob([ab], { type: "audio/mpeg" })),
@@ -337,25 +353,59 @@
       if (shell) shell.classList.toggle("is-playing", on);
     }
 
-    function playIndex(i) {
+    // Step forward through the playlist; a track that fails to load is
+    // skipped, and if every track fails the player quietly stops rather
+    // than spinning through the list forever.
+    let advanceFails = 0;
+    function advance() {
+      idx = (idx + 1) % tracks.length;
+      playIndex(idx)
+        .then(() => { advanceFails = 0; })
+        .catch(() => {
+          advanceFails++;
+          if (playing && advanceFails < tracks.length) advance();
+          else { playing = false; setPlayingUI(false); }
+        });
+    }
+
+    // A truncated download betrays itself at "ended" in one of two ways:
+    // with a duration header, the playhead leaps to the declared end after
+    // only seconds of real time (the fast-forward); without one, the track
+    // is implausibly short. Either way, once per track: drop the cached
+    // bytes, refetch past every cache layer, and replay. A second early
+    // ending is believed, so genuinely short tracks still work.
+    const distrusted = {};
+    let playStartWall = 0;
+    function endedHandler() {
+      if (!playing) return;
+      const src = tracks[idx].src;
+      const wall = (Date.now() - playStartWall) / 1000;
+      const raced = audio.duration > 0 && wall < audio.duration - 10;
+      const tooShort = audio.duration > 0 && audio.duration < 60;
+      if ((raced || tooShort) && !distrusted[src]) {
+        distrusted[src] = true;
+        if (cache[src]) {
+          try { URL.revokeObjectURL(cache[src].url); } catch (e) {}
+          delete cache[src];
+        }
+        playIndex(idx, true).catch(() => advance());
+        return;
+      }
+      advance();
+    }
+
+    function playIndex(i, bust) {
       setTitle(tracks[i].title);
       mediaSession(tracks[i].title);
       markList();
-      return load(tracks[i].src).then((entry) => {
+      return load(tracks[i].src, bust).then((entry) => {
         if (!playing) return;
         if (!audio) audio = new Audio();
         audio.src = entry.url;
         audio.loop = tracks.length === 1;
-        audio.onended =
-          tracks.length > 1
-            ? () => {
-                if (playing) {
-                  idx = (idx + 1) % tracks.length;
-                  playIndex(idx);
-                }
-              }
-            : null;
+        audio.onended = tracks.length > 1 ? endedHandler : null;
         try { audio.volume = 0; } catch (e) {}
+        playStartWall = Date.now();
         const p = audio.play();
         if (p && p.catch) p.catch(() => armRetry());
         fadeTo(LEVEL, 3);
