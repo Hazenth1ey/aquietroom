@@ -30,6 +30,25 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/uploads": "uploads" });
   eleventyConfig.addPassthroughCopy({ "src/qr-tree": "qr-tree" });
 
+  // Ship each track under a neutral .dat name as well. Download-manager
+  // extensions intercept anything that looks like music (.mp3 URLs,
+  // audio/mpeg responses) and hand the page truncated bytes; a .dat file
+  // is served as plain data and passes through untouched. The player
+  // prefers the .dat twin and falls back to the .mp3.
+  eleventyConfig.on("eleventy.after", async ({ dir }) => {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    for (const sub of ["audio", "uploads"]) {
+      const root = path.join(dir.output, sub);
+      if (!fs.existsSync(root)) continue;
+      for (const f of fs.readdirSync(root)) {
+        if (f.endsWith(".mp3")) {
+          fs.copyFileSync(path.join(root, f), path.join(root, f + ".dat"));
+        }
+      }
+    }
+  });
+
   // --- Posts collection: exclude drafts, oldest→newest (for prev/next) ---
   eleventyConfig.addCollection("posts", (api) =>
     api
