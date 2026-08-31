@@ -245,9 +245,17 @@
     }
     function load(src, bust) {
       if (cache[src]) return Promise.resolve(cache[src]);
-      const fresh = () =>
-        grab(src + (src.indexOf("?") >= 0 ? "&" : "?") + "fresh=" + Date.now(), "no-store");
-      return (bust ? fresh() : grab(src).catch(() => grab(src, "reload")))
+      // the .dat twin slips past download-manager extensions that
+      // intercept and truncate anything that looks like music
+      const dat = src + ".dat";
+      const q = (u) => u + (u.indexOf("?") >= 0 ? "&" : "?") + "fresh=" + Date.now();
+      const attempt = bust
+        ? grab(q(dat), "no-store").catch(() => grab(q(src), "no-store"))
+        : grab(dat)
+            .catch(() => grab(dat, "reload"))
+            .catch(() => grab(src))
+            .catch(() => grab(src, "reload"));
+      return attempt
         .then((ab) => {
           const entry = (cache[src] = {
             url: URL.createObjectURL(new Blob([ab], { type: "audio/mpeg" })),
