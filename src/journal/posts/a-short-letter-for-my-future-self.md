@@ -9,6 +9,3 @@ You did not leave in anger. You left because you finally believed what you saw. 
 Some nights you will miss a sister who exists mostly in the past tense, and maybe never fully existed at all. It costs nothing and it keeps your heart honest. But do not confuse missing with owing. You paid everything that was owed, and then some.
 Mom would recognize this house you're in now. That's how you know you chose right.
 Build slowly. Love loudly. Answer to no one's weather but your own.
-From the doorway,
-
-You
