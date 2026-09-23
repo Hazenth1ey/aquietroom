@@ -89,6 +89,8 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  /* the site brings its own pull-to-refresh — keep the browser's out of it */
+  overscroll-behavior-y: contain;
 }
 
 /* Starfield canvas sits behind everything */
@@ -170,6 +172,39 @@ body {
 .st-moon { opacity: 0; transform: rotate(-40deg) scale(0.6); }
 html[data-theme="light"] .st-sun { opacity: 0; transform: rotate(50deg) scale(0.6); }
 html[data-theme="light"] .st-moon { opacity: 1; transform: none; }
+
+/* Pull-to-refresh — a small circle that follows the drag from the top edge.
+   Position/rotation are driven from main.js; this is just its dress. */
+.ptr {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 7;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(14, 14, 21, 0.55);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  color: var(--ink-faint);
+  display: grid;
+  place-items: center;
+  transform: translateY(-64px);
+  opacity: 0;
+  pointer-events: none;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.ptr svg { width: 20px; height: 20px; display: block; }
+.ptr.is-armed { color: var(--glow); border-color: rgba(157, 176, 216, 0.4); }
+.ptr.is-refreshing svg { animation: ptr-spin 0.9s linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+.ptr.is-retracting {
+  transition: transform 0.45s var(--ease), opacity 0.45s var(--ease),
+    color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+html[data-theme="light"] .ptr { background: rgba(255, 255, 255, 0.65); }
 
 /* Skiper3-style ambient-sound toggle — a capsule that springs open */
 .skiper-toggle {
