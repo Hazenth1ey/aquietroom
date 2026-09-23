@@ -581,6 +581,7 @@
      after a router swap (swapped-in <script> tags never execute, so the
      shell owns mounting). One instance lives at a time. */
   let qrTreeInstance = null, qrTreeLibs = null;
+  let routerRefresh = null; // set by router(); re-fetches the page in place
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const s = document.createElement("script");
@@ -646,19 +647,22 @@
       return url;
     }
 
-    function fetchText(url) {
-      return fetch(url, { headers: { "X-Router": "1" } })
+    function fetchText(url, fresh) {
+      return fetch(url, {
+        headers: { "X-Router": "1" },
+        cache: fresh ? "reload" : "default",
+      })
         .then((r) => (r.ok ? r.text() : Promise.reject()))
         .catch(() => null);
     }
 
-    async function go(href, push) {
+    async function go(href, push, fresh) {
       if (busy) return;
       busy = true;
       const root = document.documentElement;
       root.classList.add("is-navigating");
       const [html] = await Promise.all([
-        fetchText(href),
+        fetchText(href, fresh),
         new Promise((r) => setTimeout(r, 300)),
       ]);
       if (html == null) { location.href = href; return; }
@@ -695,6 +699,10 @@
     });
 
     window.addEventListener("popstate", () => go(location.href, false));
+
+    // Pull-to-refresh rides on this: re-fetch the current page past the
+    // cache and swap it in place, so the music never stops.
+    routerRefresh = () => go(location.href, false, true);
   }
 
   /* ---- Gallery lightbox (delegated; survives router swaps) ---- */
@@ -931,6 +939,91 @@
     });
   }
 
+  /* ---- Pull-to-refresh (touch) — dragging down from the top of a page
+     reveals a small circle; past the threshold, releasing re-fetches the
+     page through the soft router so even a refresh doesn't stop the music.
+     Falls back to a full reload if the router isn't running. ---- */
+  function pullToRefresh() {
+    if (!("ontouchstart" in window)) return;
+
+    const el = document.createElement("div");
+    el.className = "ptr";
+    el.setAttribute("aria-hidden", "true");
+    el.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M20.49 12a8.5 8.5 0 1 1-2.7-6.2"/><polyline points="21 2.8 21 6.8 17 6.8"/></svg>';
+    document.body.appendChild(el);
+    const icon = el.querySelector("svg");
+
+    const THRESHOLD = 72;
+    let startY = 0, pulling = false, dist = 0, refreshing = false;
+
+    function setPull(d) {
+      dist = d;
+      const y = Math.min(d, 110);
+      el.style.transform = "translateY(" + (y - 58) + "px)";
+      el.style.opacity = String(Math.min(1, y / 46));
+      icon.style.transform = "rotate(" + y * 2.4 + "deg)";
+      el.classList.toggle("is-armed", d >= THRESHOLD);
+    }
+    function retract() {
+      el.classList.add("is-retracting");
+      el.style.transform = "translateY(-64px)";
+      el.style.opacity = "0";
+      setTimeout(() => {
+        el.classList.remove("is-retracting", "is-armed", "is-refreshing");
+        icon.style.transform = "";
+      }, 500);
+    }
+    function doRefresh() {
+      refreshing = true;
+      el.classList.add("is-refreshing");
+      icon.style.transform = "";
+      el.classList.add("is-retracting"); // reuse its transition to settle
+      el.style.transform = "translateY(16px)";
+      const done = () => { refreshing = false; retract(); };
+      if (routerRefresh) routerRefresh().then(done, () => location.reload());
+      else location.reload();
+    }
+
+    window.addEventListener(
+      "touchstart",
+      (e) => {
+        if (refreshing || window.scrollY > 0 || e.touches.length !== 1) {
+          pulling = false;
+          return;
+        }
+        startY = e.touches[0].clientY;
+        pulling = true;
+        dist = 0;
+      },
+      { passive: true }
+    );
+    window.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!pulling || refreshing) return;
+        const dy = e.touches[0].clientY - startY;
+        if (dy <= 0 || window.scrollY > 0) {
+          if (dist) setPull(0);
+          return;
+        }
+        // the pull owns the gesture — keep the page from rubber-banding too
+        if (e.cancelable) e.preventDefault();
+        el.classList.remove("is-retracting");
+        setPull(dy * 0.45);
+      },
+      { passive: false }
+    );
+    window.addEventListener("touchend", () => {
+      if (!pulling || refreshing) return;
+      pulling = false;
+      if (dist >= THRESHOLD) doRefresh();
+      else if (dist > 0) retract();
+      dist = 0;
+    });
+  }
+
   /* ---- Day/night toggle (persistent shell; theme set pre-paint in head) ---- */
   function themeControl() {
     const btn = document.getElementById("site-theme-toggle");
@@ -959,6 +1052,7 @@
     lightbox();
     themeControl();
     readingDim();
+    pullToRefresh();
     cursorTrail();
     qrTreeBoot();
   });
