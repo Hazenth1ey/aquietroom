@@ -5,9 +5,14 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-const mdLib = markdownIt({ html: true, linkify: true, typographer: false });
+// breaks:true — writing from the studio often separates paragraphs with a
+// single newline; without it markdown-it fuses a whole post into one giant
+// <p>, an unreadable wall of text.
+const mdLib = markdownIt({ html: true, linkify: true, typographer: false, breaks: true });
 
 module.exports = function (eleventyConfig) {
+  // Journal posts must render with the same rules as data-file Markdown.
+  eleventyConfig.setLibrary("md", mdLib);
   // Cache-buster stamped at build time — every deploy gets fresh asset URLs,
   // so browsers/CDNs can never serve a stale style.css or main.js again.
   eleventyConfig.addGlobalData("assetVersion", String(Date.now()));

@@ -15,8 +15,8 @@ ogType: article
       <h1>{{ title }}</h1>
     </header>
 
-    <div data-reveal="1">
-      {% if lede %}<p class="lede" style="margin-bottom: 2rem;">{{ lede }}</p>{% endif %}
+    <div class="post-body" data-reveal="1">
+      {% if lede %}<p class="lede">{{ lede }}</p>{% endif %}
       {{ content | safe }}
     </div>
 
