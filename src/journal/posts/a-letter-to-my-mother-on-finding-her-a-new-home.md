@@ -1,6 +1,6 @@
 ---
 title: A Letter to My Mother, on Finding Her a New Home
-date: '2026-09-07'
+date: '2026-09-23'
 description: This letter was written for quite a while, but today I would like to share it here in the cloud under the stars.
 tags:
   - LouisVannBopha
