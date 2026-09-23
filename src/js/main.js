@@ -888,6 +888,49 @@
     })();
   }
 
+  /* ---- Reading mode (phones) — fade the fixed corner controls while the
+     reader scrolls down through a page, bring them back on scroll-up or on
+     touch. Keeps the day/night circle from sitting on top of post titles. ---- */
+  function readingDim() {
+    const mq = window.matchMedia("(max-width: 720px)");
+    const root = document.documentElement;
+    let lastY = window.scrollY;
+    let ticking = false;
+    function onScroll() {
+      const y = window.scrollY;
+      if (!mq.matches) {
+        root.classList.remove("is-reading");
+      } else if (y > lastY + 4 && y > 130) {
+        root.classList.add("is-reading");
+      } else if (y < lastY - 4 || y < 60) {
+        root.classList.remove("is-reading");
+      }
+      lastY = y;
+    }
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          ticking = false;
+          onScroll();
+        });
+      },
+      { passive: true }
+    );
+    // a touch on either faded control restores both before the tap lands
+    ["site-theme-toggle", "sound-shell"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el)
+        el.addEventListener(
+          "touchstart",
+          () => root.classList.remove("is-reading"),
+          { passive: true }
+        );
+    });
+  }
+
   /* ---- Day/night toggle (persistent shell; theme set pre-paint in head) ---- */
   function themeControl() {
     const btn = document.getElementById("site-theme-toggle");
@@ -915,6 +958,7 @@
     router();
     lightbox();
     themeControl();
+    readingDim();
     cursorTrail();
     qrTreeBoot();
   });
