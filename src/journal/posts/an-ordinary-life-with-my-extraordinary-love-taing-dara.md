@@ -1,7 +1,7 @@
 ---
 title: An ordinary life with my extraordinary love, Taing Dara
 date: '2026-10-09'
-description: Im writing this as a reminder to myself and both of us to never take our ordinary days, our little moments, or the love we share for granted.
+description: This letter was written as a reminder to myself and both of us to never take our ordinary days, our little moments, or the love we share for granted.
 lede: Thank you Bong for giving me something I treasure more than anything—an ordinary life with you.
 ---
 
